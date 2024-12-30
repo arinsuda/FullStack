@@ -1,299 +1,353 @@
 <script setup>
-  import { ref, onMounted, watch } from "vue"
-  import { useRoute, useRouter } from "vue-router"
-  import Navbar from "../components/Navbar.vue"
-  import Sidebar from "../components/Sidebar.vue"
-  import AddReviews from "../components/AddReviews.vue"
+import { ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import Navbar from "../components/Navbar.vue";
+import Sidebar from "../components/Sidebar.vue";
+import AddReviews from "../components/AddReviews.vue";
 
-  const categories = ref([])
-  const categoryUrl = import.meta.env.VITE_CATEGORY_URL
-  const apiKey = import.meta.env.VITE_API_KEY
-  const baseUrl = import.meta.env.VITE_BASE_KEY
-  const baseBE = import.meta.env.VITE_BASE_URL
-  const movieUrl = import.meta.env.VITE_MOVIES_URL
-  const movie = ref({})
-  const cast = ref([])
-  const reviews = ref([])
-  const showCast = ref(false)
-  const showReviewModal = ref(false)
-  const route = useRoute()
-  const router = useRouter()
-  const totalLikes = ref(null)
-  const totalSaves = ref(null)
-  const totalViews = ref(null)
-  const totalReviews = ref(null)
-  const averageRating = ref(null)
-  const isLikedMovie = ref(false)
-  const isLikedReview = ref(false)
-  const isSaved = ref(false)
+//router
+const route = useRoute();
+const router = useRouter();
 
-  const fetchMovieDetail = async id => {
-    try {
-      const response = await fetch(
-        `${baseUrl}/movie/${id}?api_key=${apiKey}&language=en-US`
-      )
-      if (!response.ok) throw new Error("Failed to fetch movie details")
-      const data = await response.json()
-      movie.value = data
+//env
+const categoryUrl = import.meta.env.VITE_CATEGORY_URL;
+const apiKey = import.meta.env.VITE_API_KEY;
+const baseTMDB = import.meta.env.VITE_BASE_KEY;
+const baseUrl = import.meta.env.VITE_BASE_URL;
+const movieUrl = import.meta.env.VITE_MOVIES_URL;
 
-      await updateMovieViews(id);
-    } catch (error) {
-      console.error("Error fetching movie details:", error)
-    }
+const categories = ref([]);
+const movie = ref({});
+const cast = ref([]);
+const reviews = ref([]);
+
+//state
+const totalLikes = ref(0);
+const totalSaves = ref(0);
+const totalViews = ref(0);
+const totalReviews = ref(0);
+const averageRating = ref(0);
+
+//button
+const showCast = ref(false);
+const showReviewModal = ref(false);
+const isLikedReview = ref(false);
+const isSaved = ref(false);
+const isLikedMovie = ref(false);
+
+const fetchMovieDetail = async (id) => {
+  try {
+    const response = await fetch(
+      `${baseTMDB}/movie/${id}?api_key=${apiKey}&language=en-US`
+    );
+    if (!response.ok) throw new Error("Failed to fetch movie details");
+    const data = await response.json();
+    movie.value = data;
+
+    await updateMovieViews(id);
+  } catch (error) {
+    console.error("Error fetching movie details:", error);
   }
-
-  const updateMovieViews = async (id) => {
-    try {
-        const response = await fetch(`${movieUrl}/${id}/views`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        if (!response.ok) throw new Error('Failed to update movie views');
-    } catch (error) {
-        console.error('Error updating movie views:', error);
-    }
 };
 
-  const updateMovieStats = async id => {
-    try {
-      const postResponse = await fetch(`${movieUrl}/${id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ movieId: id }),
-      })
-
-      if (!postResponse.ok) throw new Error("Failed to update movie ID")
-
-      const statsResponse = await fetch(`${movieUrl}/${id}`)
-      if (!statsResponse.ok) throw new Error("Failed to fetch movie stats")
-
-      const data = await statsResponse.json()
-
-      totalLikes.value = data.data.likesCount || 0
-      totalSaves.value = data.data.watchlistsCount || 0
-      totalViews.value = data.data.members || 0
-      totalReviews.value = data.data.reviewsCount || 0
-      averageRating.value = parseFloat(data.data.rating) || 0
-
-      isLikedMovie.value = data.data.isLiked || false
-      isSaved.value = data.data.isSaved || false
-    } catch (error) {
-      console.error("Error updating movie stats:", error)
-    }
+const updateMovieViews = async (id) => {
+  try {
+    const response = await fetch(`${movieUrl}/${id}/views`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) throw new Error("Failed to update movie views");
+  } catch (error) {
+    console.error("Error updating movie views:", error);
   }
+};
 
-  const fetchMovieCast = async id => {
-    try {
-      const response = await fetch(
-        `${baseUrl}/movie/${id}/credits?api_key=${apiKey}`
-      )
-      if (!response.ok) throw new Error("Failed to fetch movie cast")
-      const data = await response.json()
-      cast.value = data.cast
-    } catch (error) {
-      console.error("Error fetching movie cast:", error)
-    }
+const updateMovieStats = async (id) => {
+  try {
+    const postResponse = await fetch(`${movieUrl}/${id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ movieId: id }),
+    });
+
+    if (!postResponse.ok) throw new Error("Failed to update movie ID");
+
+    const statsResponse = await fetch(`${movieUrl}/${id}`);
+    if (!statsResponse.ok) throw new Error("Failed to fetch movie stats");
+
+    const data = await statsResponse.json();
+
+    totalLikes.value = data.data.likesCount || 0;
+    totalSaves.value = data.data.watchlistsCount || 0;
+    totalViews.value = data.data.members || 0;
+    totalReviews.value = data.data.reviewsCount || 0;
+    averageRating.value = parseFloat(data.data.rating) || 0;
+    isLikedMovie.value = data.data.isLiked || false;
+    isSaved.value = data.data.isSaved || false;
+
+    isLikedMovie.value = data.data.isLiked || false;
+    isSaved.value = data.data.isSaved || false;
+  } catch (error) {
+    console.error("Error updating movie stats:", error);
   }
+};
 
-  const fetchReviews = async id => {
-    try {
-      const response = await fetch(`${movieUrl}/${id}/reviews`)
+const fetchMovieCast = async (id) => {
+  try {
+    const response = await fetch(
+      `${baseTMDB}/movie/${id}/credits?api_key=${apiKey}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch movie cast");
+    const data = await response.json();
+    cast.value = data.cast;
+  } catch (error) {
+    console.error("Error fetching movie cast:", error);
+  }
+};
 
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`)
-      }
+const fetchReviews = async (id) => {
+  try {
+    const response = await fetch(`${movieUrl}/${id}/reviews`);
 
-      const data = await response.json()
-      if (data.data) {
-        const reviewsData = data.data
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
+    }
 
-        for (let review of reviewsData) {
-          const userResponse = await fetch(`${baseBE}/users/${review.userId}`)
+    const data = await response.json();
+    if (data.data) {
+      const reviewsData = data.data;
 
-          if (userResponse.ok) {
-            const userData = await userResponse.json()
-            review.author = userData.data.username
-          } else {
-            review.author = "Unknown User"
-          }
+      for (let review of reviewsData) {
+        const userResponse = await fetch(`${baseUrl}/users/${review.userId}`);
 
-          review.createdAt = new Date(review.createdAt).toLocaleDateString()
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          review.author = userData.data.username;
+        } else {
+          review.author = "Unknown User";
         }
 
-        reviews.value = reviewsData
-      } else {
-        reviews.value = []
-      }
-    } catch (error) {
-      console.error("Error fetching reviews:", error)
-    }
-  }
-
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(categoryUrl)
-      if (!response.ok) throw new Error("Failed to fetch categories")
-      const data = await response.json()
-      categories.value = data.sort((a, b) =>
-        a.categoryName.localeCompare(b.categoryName)
-      )
-    } catch (error) {
-      console.error("Error fetching categories:", error)
-    }
-  }
-
-  const toggleCast = () => {
-    showCast.value = !showCast.value
-  }
-
-  const openReviewModal = () => {
-    showReviewModal.value = true
-  }
-
-  const closeReviewModal = () => {
-    showReviewModal.value = false
-  }
-
-  const mapGenreToCategory = genreName => {
-    const category = categories.value.find(
-      cat => cat.categoryName.toLowerCase() === genreName.toLowerCase()
-    )
-    return category ? category.id : null
-  }
-
-  const handleReviewSubmit = async ({ comment, rating }) => {
-    const movieId = route.params.id
-    const reviewData = { comment, rating }
-
-    try {
-      let token = localStorage.getItem("token")
-
-      if (!token) {
-        router.push({ name: "Login" })
-        return
+        review.createdAt = new Date(review.createdAt).toLocaleDateString();
       }
 
-      if (token.startsWith("Bearer ")) {
-        token = token.slice(7)
-      }
-
-      token = token.replace(/['"]+/g, "")
-
-      const response = await fetch(
-        `${import.meta.env.VITE_MOVIES_URL}/${movieId}/reviews`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(reviewData),
-        }
-      )
-
-      if (!response.ok) throw new Error("Failed to submit review")
-
-      await fetchReviews(movieId) // refresh reviews
-      closeReviewModal()
-    } catch (error) {
-      console.error("Error submitting review:", error)
+      reviews.value = reviewsData;
+    } else {
+      reviews.value = [];
     }
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
   }
+};
 
-  const handleReviewLike = async reviewId => {
-    const token = JSON.parse(localStorage.getItem("token"))
-    try {
-      const response = await fetch(`${movieUrl}/reviews/${reviewId}/like`, {
+const fetchCategories = async () => {
+  try {
+    const response = await fetch(categoryUrl);
+    if (!response.ok) throw new Error("Failed to fetch categories");
+    const data = await response.json();
+    categories.value = data.sort((a, b) =>
+      a.categoryName.localeCompare(b.categoryName)
+    );
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+  }
+};
+
+const toggleCast = () => {
+  showCast.value = !showCast.value;
+};
+
+const openReviewModal = () => {
+  showReviewModal.value = true;
+};
+
+const closeReviewModal = () => {
+  showReviewModal.value = false;
+};
+
+const mapGenreToCategory = (genreName) => {
+  const category = categories.value.find(
+    (cat) => cat.categoryName.toLowerCase() === genreName.toLowerCase()
+  );
+  return category ? category.id : null;
+};
+
+const handleReviewSubmit = async ({ comment, rating }) => {
+  const movieId = route.params.id;
+  const reviewData = { comment, rating };
+
+  try {
+    let token = JSON.parse(localStorage.getItem("token"));
+
+    if (!token) {
+      router.push({ name: "Login" });
+      return;
+    }
+
+    const response = await fetch(
+      `${import.meta.env.VITE_MOVIES_URL}/${movieId}/reviews`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      })
-      if (response.status === 201) {
-        isLikedReview.value = !isLikedReview.value
-        const updatedReview = await response.json()
-        const index = reviews.value.findIndex(r => r.id === reviewId)
-        if (index !== -1) {
-          reviews.value[index].likes = updatedReview.likes
-        }
-      } else if (response.status === 401) {
-        router.push({ name: "Login" })
-      } else {
-        throw new Error("Failed to like the review")
+        body: JSON.stringify(reviewData),
       }
-    } catch (error) {
-      console.error("Error liking the review:", error)
-    }
-  }
+    );
 
-  const handleAddToWatchlist = async () => {
-    const movieId = route.params.id
-    const token = JSON.parse(localStorage.getItem("token"))
-    try {
-      const response = await fetch(`${movieUrl}/${movieId}/watchlists`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (response.status === 201) {
-        isSaved.value = !isSaved.value
-        const data = await response.json()
-        totalSaves.value = data.totalSaves
-      } else if (response.status === 401) {
-        router.push({ name: "Login" })
-      } else {
-        throw new Error("Failed to add movie to watchlist")
+    if (!response.ok) throw new Error("Failed to submit review");
+
+    await fetchReviews(movieId);
+    closeReviewModal();
+  } catch (error) {
+    console.error("Error submitting review:", error);
+  }
+};
+
+const handleReviewLike = async (reviewId) => {
+  const token = JSON.parse(localStorage.getItem("token"));
+  try {
+    const response = await fetch(`${movieUrl}/reviews/${reviewId}/like`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.status === 201) {
+      isLikedReview.value = !isLikedReview.value;
+      const updatedReview = await response.json();
+      const index = reviews.value.findIndex((r) => r.id === reviewId);
+      if (index !== -1) {
+        reviews.value[index].likes = updatedReview.likes;
       }
-    } catch (error) {
-      console.error("Error adding movie to watchlist:", error)
+    } else if (response.status === 401) {
+      router.push({ name: "Login" });
+    } else {
+      throw new Error("Failed to like the review");
     }
+  } catch (error) {
+    console.error("Error liking the review:", error);
   }
+};
 
-  const handleMovieLike = async () => {
-    const movieId = route.params.id
-    const token = JSON.parse(localStorage.getItem("token"))
-    try {
-      const response = await fetch(`${movieUrl}/${movieId}/likes`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (response.status === 201 || response.status === 200) {
-        const data = await response.json()
-        totalLikes.value = data.totalLikes
-        isLikedMovie.value = !isLikedMovie.value
-      } else if (response.status === 401) {
-        router.push({ name: "Login" })
-      } else {
-        throw new Error("Failed to like the movie")
-      }
-    } catch (error) {
-      console.error("Error liking the movie:", error)
+const handleAddToWatchlist = async () => {
+  const movieId = route.params.id;
+  const token = JSON.parse(localStorage.getItem("token"));
+  try {
+    const response = await fetch(`${movieUrl}/${movieId}/watchlists`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.status === 201 || response.status === 200) {
+      const result = await response.json();
+      const { data, totalWatchlists: newTotalWatchlists } = result;
+
+      isSaved.value = data.isWatchlist;
+      totalSaves.value = newTotalWatchlists ?? 0;
+
+      checkUserIsStatus();
+    } else if (response.status === 401) {
+      router.push({ name: "Login" });
+    } else {
+      throw new Error("Failed to add movie to watchlist");
     }
+  } catch (error) {
+    console.error("Error adding movie to watchlist:", error);
   }
+};
 
-  watch([totalLikes, totalSaves, totalReviews], async () => {
-    const movieId = route.params.id
-    await updateMovieStats(movieId)
-  })
+const handleMovieLike = async () => {
+  const movieId = route.params.id;
+  const token = JSON.parse(localStorage.getItem("token"));
 
-  onMounted(() => {
-    const movieId = route.params.id
-    fetchMovieDetail(movieId)
-    fetchMovieCast(movieId)
-    fetchReviews(movieId)
-    fetchCategories()
-    updateMovieStats(movieId)
-  })
+  try {
+    const response = await fetch(`${baseUrl}/api/movies/${movieId}/likes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 201 || response.status === 200) {
+
+      const result = await response.json();
+      const { data, totalLikes: newTotalLikes } = result;
+
+      isLikedMovie.value = data.isLiked;
+      totalLikes.value = newTotalLikes ?? 0;
+
+      checkUserIsStatus();
+    } else if (response.status === 401) {
+      router.push({ name: "Login" });
+    } else {
+      throw new Error("Failed to like the movie");
+    }
+  } catch (error) {
+    console.error("Error liking the movie:", error);
+  }
+};
+
+//fetch Status By USER
+const checkUserIsStatus = async () => {
+  const token = JSON.parse(localStorage.getItem('token'));
+  const payload = JSON.parse(localStorage.getItem('payload'))
+  const userId = payload.userId
+
+  try {
+    const response = await fetch(`${baseUrl}/users/${userId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.status === 200) {
+      const data = await response.json();
+
+      // Check isLiked
+      const likedMovies = data.data.my_likes;
+      const movieIdLiked = likedMovies.length > 0 ? likedMovies[0].movieId : null;
+      const isLiked = likedMovies.some(
+        (movie) => movie.movieId === movieIdLiked && movie.isLiked === 1
+      );
+      isLikedMovie.value = isLiked;
+
+      // Check isWatchlisted
+      const watchlistedMovies = data.data.my_watchlists;
+      const movieIdWatchlisted = watchlistedMovies.length > 0 ? watchlistedMovies[0].movieId : null;
+      const isWatchlisted = watchlistedMovies.some(
+        (movie) => movie.movieId === movieIdWatchlisted && movie.isWatchlist === 1
+      );
+      isSaved.value = isWatchlisted;
+      console.log(isSaved.value);
+    }
+  } catch (error) {
+    console.error("Error fetching liked movies:", error);
+  }
+};
+
+// watch([totalLikes, totalSaves, totalReviews], async () => {
+//   const movieId = route.params.id
+//   await updateMovieStats(movieId)
+// })
+
+onMounted(async () => {
+  const movieId = route.params.id;
+  await fetchMovieDetail(movieId);
+  await fetchMovieCast(movieId);
+  await fetchReviews(movieId);
+  await fetchCategories();
+  await updateMovieStats(movieId);
+  await checkUserIsStatus();
+});
 </script>
 
 <template>
@@ -310,14 +364,14 @@
         <!-- Movie Detail Section -->
         <div class="flex flex-col gap-8 movie-detail">
           <!-- Movie Poster and Details -->
-          <div class="flex w-full gap-6">
+          <div class="flex w-full gap-5 p-6">
             <img
               :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`"
               alt="Movie Poster"
-              class="w-1/5 rounded-lg shadow-lg hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition-all duration-300"
+              class="w-1/4 rounded-lg shadow-lg hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition-all duration-300"
             />
 
-            <div class="flex flex-col w-2/3 px-4">
+            <div class="flex flex-col w-3/3 px-4">
               <div class="flex items-center justify-between mb-2">
                 <h1
                   class="mb-2 text-3xl font-bold tracking-wide text-red-500 transition duration-300 hover:text-red-600"
@@ -555,16 +609,16 @@
 </template>
 
 <style scoped>
-  .movie-detail {
-    max-width: 70%;
-    margin: 0 auto;
-  }
+.movie-detail {
+  max-width: 70%;
+  margin: 0 auto;
+}
 
-  .group:hover .group-hover\:scale-105 {
-    transform: scale(1.05);
-  }
+.group:hover .group-hover\:scale-105 {
+  transform: scale(1.05);
+}
 
-  .fixed {
-    transition: right 0.3s ease;
-  }
+.fixed {
+  transition: right 0.3s ease;
+}
 </style>

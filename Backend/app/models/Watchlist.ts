@@ -14,6 +14,9 @@ export default class WatchLists extends BaseModel {
   declare movieId: number
 
   @column()
+  declare isWatchlist: boolean
+
+  @column()
   declare status: 'TO_WATCH' | 'WATCHED'
 
   @column()

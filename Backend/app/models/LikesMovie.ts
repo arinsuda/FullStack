@@ -13,8 +13,11 @@ export default class Like extends BaseModel {
   @column()
   declare movieId: number
 
+  @column()
+  declare isLiked: boolean
+
   @column.dateTime({ autoCreate: true })
-  declare likedAt: DateTime 
+  declare likedAt: DateTime | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

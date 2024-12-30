@@ -4,52 +4,72 @@ import { DateTime } from 'luxon'
 
 export default class LikesMovieController {
   public async store({ auth, response, params }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = await auth.getUserOrFail()
     const movieId = params.movieId
 
     try {
-      const existingLike = await LikeMovie.query()
-        .where('userId', user.id)
-        .where('movieId', movieId)
+      let likeMovie = await LikeMovie.query()
+        .where('user_id', user.id)
+        .where('movie_id', movieId)
         .first()
 
-      if (existingLike) {
-        await existingLike.delete()
+      if (likeMovie) {
+        likeMovie.isLiked = false
+        await likeMovie.delete()
+
+        const totalLikes = await LikeMovie.query()
+          .where('movie_id', movieId)
+          .where('isLiked', true)
+          .count('* as totalLikes')
+
         return response.status(200).send({
           message: 'Movie unliked successfully',
+          data: likeMovie,
+          totalLikes: totalLikes[0].$extras.totalLikes,
         })
       }
 
-      const likeMovie = new LikeMovie()
+      // Create a new like entry if it doesn't exist
+      likeMovie = new LikeMovie()
       likeMovie.userId = user.id
       likeMovie.movieId = movieId
+      likeMovie.isLiked = true
       likeMovie.likedAt = DateTime.now()
 
       await likeMovie.save()
 
+      const totalLikes = await LikeMovie.query()
+        .where('movie_id', movieId)
+        .where('isLiked', true)
+        .count('* as totalLikes')
+
       return response.status(201).send({
         message: 'Movie liked successfully',
         data: likeMovie,
+        totalLikes: totalLikes[0].$extras.totalLikes,
       })
     } catch (error) {
-      return response.status(400).send({ message: 'Failed to like movie', error })
+      return response.status(400).send({ message: 'Failed to like/unlike movie', error })
     }
   }
 
   public async index({ auth, response }: HttpContext) {
-    const user = auth.getUserOrFail()
-    
-    const likedMovies = await LikeMovie.query().where('userId', user.id).orderBy('likedAt', 'desc')
+    const user = await auth.getUserOrFail()
 
-    if (likedMovies) {
+    try {
+      const likedMovies = await LikeMovie.query()
+        .where('user_id', user.id)
+        .where('is_liked', true)
+        .orderBy('liked_at', 'desc')
+
       return response.status(200).send({
         message: 'Liked movies fetched successfully',
         data: likedMovies,
       })
-    } else {
-      return response.status(404).send({
-        message: `You don't have the movies you like.`,
-        data: likedMovies,
+    } catch (error) {
+      return response.status(400).send({
+        message: 'Failed to fetch liked movies',
+        error,
       })
     }
   }

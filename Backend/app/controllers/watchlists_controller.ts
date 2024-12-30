@@ -6,37 +6,53 @@ export default class WatchlistsController {
   public async store({ auth, params, response }: HttpContext) {
     const user = auth.getUserOrFail()
     const movieId = params.movieId
-  
+
     try {
       // ตรวจสอบว่า movieId ของผู้ใช้คนนี้มีอยู่ใน watchlist หรือไม่
       const existingWatchlist = await WatchLists.query()
         .where('userId', user.id)
         .where('movieId', movieId)
         .first()
-  
+
       if (existingWatchlist) {
-        // ถ้ามีแล้ว, ลบออกจาก watchlist
+        existingWatchlist.isWatchlist = false
         await existingWatchlist.delete()
+
+        const totalWatchlists = await WatchLists.query()
+          .where('movieId', movieId)
+          .where('is_watchlist', true)
+          .count('* as totalWatchlists')
+
         return response.status(200).send({
           message: 'Watchlist item removed successfully',
-        })
-      } else {
-        // ถ้ายังไม่มี, เพิ่มเข้าไปใน watchlist
-        const watchlist = new WatchLists()
-        watchlist.userId = user.id
-        watchlist.movieId = movieId
-        watchlist.status = "TO_WATCH"
-        watchlist.addedAt = DateTime.now().toFormat('yyyy-LL-dd HH:mm:ss')
-  
-        await watchlist.save()
-  
-        return response.status(201).send({
-          message: 'Watchlist item created successfully',
-          data: watchlist,
+          data: existingWatchlist,
+          totalWatchlists: totalWatchlists[0].$extras.totalWatchlists,
         })
       }
+      // ถ้ายังไม่มี, เพิ่มเข้าไปใน watchlist
+      const watchlist = new WatchLists()
+      watchlist.userId = user.id
+      watchlist.movieId = movieId
+      watchlist.isWatchlist = true
+      watchlist.status = 'TO_WATCH'
+      watchlist.addedAt = DateTime.now().toFormat('yyyy-LL-dd HH:mm:ss')
+
+      await watchlist.save()
+
+      const totalWatchlists = await WatchLists.query()
+        .where('movieId', movieId)
+        .where('is_watchlist', true)
+        .count('* as totalWatchlists')
+
+      return response.status(201).send({
+        message: 'Watchlist item created successfully',
+        data: watchlist,
+        totalWatchlists: totalWatchlists[0].$extras.totalWatchlists,
+      })
     } catch (error) {
-      return response.status(400).send({ message: 'Failed to create or remove watchlist item', error })
+      return response
+        .status(400)
+        .send({ message: 'Failed to create or remove watchlist item', error })
     }
   }
 

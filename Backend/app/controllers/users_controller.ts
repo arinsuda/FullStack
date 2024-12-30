@@ -9,7 +9,11 @@ export default class UsersController {
   async show({ params, response }: HttpContext) {
     try {
       const userId = params.id
-      const user = await User.findOrFail(userId)
+      const user = await User.query()
+        .where('id', userId)
+        .preload('my_watchlists') 
+        .preload('my_likes')      
+        .firstOrFail()            
 
       return response.json({
         message: 'User fetched successfully',

@@ -10,7 +10,9 @@ router
     router.put('/users/:id', [UsersController, 'edit']).as('users.edit')
     router.get('/users/watchlists', [WatchlistsController, 'index'])
     router.post('/api/movies/:movieId/likes', [LikesMovieController, 'store'])
+    router.delete('/api/movies/:movieId/likes', [LikesMovieController, 'destroy'])
     router.post('/api/movies/:movieId/watchlists', [WatchlistsController, 'store'])
+    router.delete('/api/movies/:movieId/watchlists', [WatchlistsController, 'destroy'])
   })
   .use(middleware.auth())
 
