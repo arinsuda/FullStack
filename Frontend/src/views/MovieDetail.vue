@@ -299,6 +299,12 @@ const handleMovieLike = async () => {
 //fetch Status By USER
 const checkUserIsStatus = async () => {
   const token = JSON.parse(localStorage.getItem('token'));
+
+  if (!token) {
+    // console.log('No token found');
+    return;
+  }
+
   const payload = JSON.parse(localStorage.getItem('payload'))
   const userId = payload.userId
 
