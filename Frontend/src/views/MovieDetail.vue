@@ -135,12 +135,20 @@ const fetchReviews = async (id) => {
       }
 
       reviews.value = reviewsData;
+      updateReviewStats();
     } else {
       reviews.value = [];
     }
   } catch (error) {
     console.error("Error fetching reviews:", error);
   }
+};
+
+const updateReviewStats = () => {
+  totalReviews.value = reviews.value.length;
+
+  const totalRating = reviews.value.reduce((sum, review) => sum + (review.rating || 0), 0);
+  averageRating.value = reviews.value.length > 0 ? (totalRating / reviews.value.length).toFixed(1) : 0;
 };
 
 const fetchCategories = async () => {
@@ -202,6 +210,7 @@ const handleReviewSubmit = async ({ comment, rating }) => {
     if (!response.ok) throw new Error("Failed to submit review");
 
     await fetchReviews(movieId);
+    updateReviewStats();
     closeReviewModal();
   } catch (error) {
     console.error("Error submitting review:", error);
@@ -299,6 +308,7 @@ const handleMovieLike = async () => {
 //fetch Status By USER
 const checkUserIsStatus = async () => {
   const token = JSON.parse(localStorage.getItem('token'));
+  const movieId = route.params.id
 
   if (!token) {
     // console.log('No token found');
@@ -309,7 +319,7 @@ const checkUserIsStatus = async () => {
   const userId = payload.userId
 
   try {
-    const response = await fetch(`${baseUrl}/users/${userId}`, {
+    const response = await fetch(`${baseUrl}/users/${userId}/movies/${movieId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -321,10 +331,13 @@ const checkUserIsStatus = async () => {
       // Check isLiked
       const likedMovies = data.data.my_likes;
       const movieIdLiked = likedMovies.length > 0 ? likedMovies[0].movieId : null;
+      // console.log(movieIdLiked);
+      
       const isLiked = likedMovies.some(
         (movie) => movie.movieId === movieIdLiked && movie.isLiked === 1
       );
       isLikedMovie.value = isLiked;
+      // console.log('Like is:' + isLikedMovie.value);
 
       // Check isWatchlisted
       const watchlistedMovies = data.data.my_watchlists;
@@ -333,7 +346,7 @@ const checkUserIsStatus = async () => {
         (movie) => movie.movieId === movieIdWatchlisted && movie.isWatchlist === 1
       );
       isSaved.value = isWatchlisted;
-      console.log(isSaved.value);
+      // console.log('Watchlist is' + isSaved.value);
     }
   } catch (error) {
     console.error("Error fetching liked movies:", error);

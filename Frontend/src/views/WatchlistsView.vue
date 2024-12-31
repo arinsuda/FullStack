@@ -1,69 +1,102 @@
 <script setup>
-  import { ref, onMounted } from "vue"
-  import { useRouter } from "vue-router"
-  import Navbar from "@/components/Navbar.vue"
-  import Sidebar from "@/components/Sidebar.vue"
-  import { getData } from "@/lib/info.js"
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import Navbar from "@/components/Navbar.vue";
+import Sidebar from "@/components/Sidebar.vue";
+import { getData } from "@/lib/info.js";
 
-  const user = ref(null)
-  const router = useRouter()
-  const watchlistMovies = ref([])
+const user = ref(null);
+const router = useRouter();
+const watchlistMovies = ref([]);
+const categories = ref([]);
+const baseTMDB = import.meta.env.VITE_BASE_KEY;
+const apiKey = import.meta.env.VITE_API_KEY;
+const categoryUrl = import.meta.env.VITE_CATEGORY_URL;
 
-  const checkUserPayload = () => {
-    const payload = localStorage.getItem("payload")
-    if (payload) {
-      user.value = JSON.parse(payload)
+const checkUserPayload = () => {
+  const payload = localStorage.getItem("payload");
+  if (payload) {
+    user.value = JSON.parse(payload);
+  }
+};
+
+const getMyWatchlist = async () => {
+  try {
+    const token = JSON.parse(localStorage.getItem("token"));
+    if (token) {
+      const userId = token.id;
+      const result = await getData(
+        `${import.meta.env.VITE_BASE_URL}/users/watchlists`,
+        userId
+      );
+
+      // ใช้ movieId เพื่อดึงรายละเอียดเพิ่มเติมจาก TMDB
+      watchlistMovies.value = await Promise.all(
+        result.data.map(async (movie) => {
+          const movieId = movie.movieId;
+          try {
+            const tmdbResponse = await fetch(
+              `${baseTMDB}/movie/${movieId}?api_key=${apiKey}&language=en-US`
+            );
+            const tmdbData = await tmdbResponse.json();
+
+            return {
+              ...movie,
+              title: tmdbData.title,
+              description: tmdbData.overview,
+              poster: tmdbData.poster_path
+                ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
+                : "https://via.placeholder.com/300x450?text=No+Poster",
+            };
+          } catch (error) {
+            console.error(`Error fetching details for movie ID ${movieId}:`, error);
+            return {
+              ...movie,
+              title: "Unknown Title",
+              description: "No description available",
+              poster: "https://via.placeholder.com/300x450?text=No+Poster",
+            };
+          }
+        })
+      );
     }
+  } catch (error) {
+    console.error("Error fetching watchlist movies:", error);
   }
+};
 
-  const getMyWatchlist = async () => {
-    try {
-      const payload = JSON.parse(localStorage.getItem("payload"))
-      if (payload && payload.userId) {
-        const userId = payload.userId
-        const result = await getData(
-          `${import.meta.env.VITE_BASE_URL}/users/${userId}/watchlists`,
-          userId
-        )
-        watchlistMovies.value = result.data
-      }
-    } catch (error) {
-      console.error("Error fetching watchlist movies:", error)
-    }
+const fetchCategories = async () => {
+  try {
+    const response = await fetch(categoryUrl);
+    if (!response.ok) throw new Error("Failed to fetch categories");
+    const data = await response.json();
+    categories.value = data.sort((a, b) =>
+      a.categoryName.localeCompare(b.categoryName)
+    );
+  } catch (error) {
+    console.error("Error fetching categories:", error);
   }
+};
 
-  const categories = ref([])
-  const categoryUrl = import.meta.env.VITE_CATEGORY_URL
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(categoryUrl)
-      if (!response.ok) {
-        throw new Error("Failed to fetch categories")
-      }
-      const data = await response.json()
-      categories.value = data.sort((a, b) =>
-        a.categoryName.localeCompare(b.categoryName)
-      )
-    } catch (error) {
-      console.error("Error fetching categories:", error)
-    }
+const goToLogin = () => {
+  router.push({ name: "Login" });
+};
+
+const goToRegister = () => {
+  router.push({ name: "Register" });
+};
+
+const goToMovieDetail = (movieId) => {
+  router.push({ name: "MovieDetail", params: { id: movieId } });
+};
+
+onMounted(async () => {
+  checkUserPayload();
+  if (user.value) {
+    await getMyWatchlist();
   }
-
-  const goToLogin = () => {
-    router.push({ name: "Login" })
-  }
-
-  const goToRegister = () => {
-    router.push({ name: "Register" })
-  }
-
-  onMounted(async () => {
-    checkUserPayload()
-    if (user.value) {
-      await getMyWatchlist()
-    }
-    fetchCategories()
-  })
+  fetchCategories();
+});
 </script>
 
 <template>
@@ -84,18 +117,38 @@
           <h2 class="text-3xl font-bold text-center">Watchlist</h2>
           <div
             v-if="watchlistMovies.length"
-            class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+            class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4"
           >
             <div
               v-for="movie in watchlistMovies"
               :key="movie.id"
-              class="p-4 bg-gray-800 rounded shadow hover:shadow-lg"
+              class="p-4 bg-zinc-800 rounded-xl shadow hover:shadow-lg transform transition duration-300 hover:-translate-y-1"
             >
-              <h3 class="mb-2 text-lg font-bold">{{ movie.title }}</h3>
-              <p class="text-gray-400">{{ movie.description }}</p>
-              <p class="mt-2 text-sm text-gray-500">
-                Added to Watchlist: {{ new Date(movie.addedAt).toLocaleString() }}
+              <img
+                :src="
+                  movie.poster ||
+                  'https://via.placeholder.com/300x450?text=No+Poster'
+                "
+                alt="Movie Poster"
+                class="w-full h-64 object-cover rounded-md mb-4"
+              />
+              <h3 class="mb-2 text-lg font-bold truncate text-center">
+                {{ movie.title }}
+              </h3>
+              <p class="text-gray-400 text-sm truncate-3-lines">
+                {{ movie.description || "No description available" }}
               </p>
+              <p class="mt-2 text-sm text-gray-500">
+                <span class="font-bold text-gray-300">Added to Watchlist:</span>
+                {{ new Date(movie.addedAt).toLocaleString() }}
+              </p>
+              <!-- ปุ่มสำหรับไปหน้า MovieDetail -->
+              <button
+                @click="goToMovieDetail(movie.movieId)"
+                class="w-full mt-2 py-2 text-sm font-bold text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none"
+              >
+                View Details
+              </button>
             </div>
           </div>
           <div v-else class="text-center text-gray-400">
@@ -134,5 +187,15 @@
 </template>
 
 <style scoped>
-  @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.truncate-3-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 </style>

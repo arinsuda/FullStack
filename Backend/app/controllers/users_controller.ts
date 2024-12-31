@@ -10,10 +10,36 @@ export default class UsersController {
     try {
       const userId = params.id
       const user = await User.query()
-        .where('id', userId)
-        .preload('my_watchlists') 
-        .preload('my_likes')      
-        .firstOrFail()            
+      .where('id', userId)
+      .preload('my_reviews')   
+
+      return response.json({
+        message: 'User fetched successfully',
+        data: user,
+      })
+
+    } catch (error) {
+      return response.status(404).json({
+        message: 'User not found',
+        error: error.message,
+      })
+    }
+  }
+
+  async showStatus({ params, response }: HttpContext) {
+    try {
+      const userId = params.id
+      const movieId = params.movieId
+      const user = await User.query()
+      .where('id', userId)
+      .preload('my_watchlists', (query) => {
+        query.where('movie_id', movieId);
+      })
+      .preload('my_likes', (query) => {
+        query.where('movie_id', movieId);
+      })
+      .firstOrFail();
+   
 
       return response.json({
         message: 'User fetched successfully',

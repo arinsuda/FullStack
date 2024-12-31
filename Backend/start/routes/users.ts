@@ -20,4 +20,5 @@ router.group(() => {
   router.post('/login', [UsersController, 'login']).as('users.login')
   router.post('/register', [UsersController, 'register']).as('users.register')
   router.get('/users/:id', [UsersController, 'show'])
+  router.get('/users/:id/movies/:movieId', [UsersController, 'showStatus'])
 })
