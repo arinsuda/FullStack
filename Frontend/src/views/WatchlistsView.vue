@@ -20,6 +20,29 @@ const checkUserPayload = () => {
   }
 };
 
+const getMediaType = async (movieId) => {
+  try {
+    // ลองค้นหาในฐานข้อมูลของ Movie
+    const movieResponse = await fetch(
+      `${baseTMDB}/movie/${movieId}?api_key=${apiKey}&language=en-US`
+    );
+    if (movieResponse.ok) {
+      return "movie";
+    }
+
+    // หากไม่เจอ ลองค้นหาในฐานข้อมูลของ TV
+    const tvResponse = await fetch(
+      `${baseTMDB}/tv/${movieId}?api_key=${apiKey}&language=en-US`
+    );
+    if (tvResponse.ok) {
+      return "tv";
+    }
+  } catch (error) {
+    console.error(`Error determining media type for ID ${movieId}:`, error);
+  }
+  return null; // หากไม่พบข้อมูล
+};
+
 const getMyWatchlist = async () => {
   try {
     const token = JSON.parse(localStorage.getItem("token"));
@@ -35,18 +58,24 @@ const getMyWatchlist = async () => {
         result.data.map(async (movie) => {
           const movieId = movie.movieId;
           try {
+            const mediaType = await getMediaType(movieId);
+            if (!mediaType) {
+              throw new Error(`Media type not found for ID ${movieId}`);
+            }
+
             const tmdbResponse = await fetch(
-              `${baseTMDB}/movie/${movieId}?api_key=${apiKey}&language=en-US`
+              `${baseTMDB}/${mediaType}/${movieId}?api_key=${apiKey}&language=en-US`
             );
             const tmdbData = await tmdbResponse.json();
 
             return {
               ...movie,
-              title: tmdbData.title,
+              title: tmdbData.title || tmdbData.name,
               description: tmdbData.overview,
               poster: tmdbData.poster_path
                 ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
                 : "https://via.placeholder.com/300x450?text=No+Poster",
+              mediaType,
             };
           } catch (error) {
             console.error(`Error fetching details for movie ID ${movieId}:`, error);

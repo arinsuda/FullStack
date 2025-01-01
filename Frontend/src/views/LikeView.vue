@@ -9,7 +9,8 @@ const user = ref(null);
 const router = useRouter();
 const likedMovies = ref([]);
 const categories = ref([]);
-const movieDetail = ref(null);
+const movieDetail = ref(null);  // Added movieDetail as a ref
+
 const categoryUrl = import.meta.env.VITE_CATEGORY_URL;
 const baseTMDB = import.meta.env.VITE_BASE_KEY;
 const apiKey = import.meta.env.VITE_API_KEY;
@@ -19,6 +20,35 @@ const checkUserPayload = () => {
   if (payload) {
     user.value = JSON.parse(payload);
   }
+};
+
+const getMediaType = async (movieId) => {
+  try {
+    const movieResponse = await fetch(
+      `${baseTMDB}/movie/${movieId}?api_key=${apiKey}&language=en-US`
+    );
+    if (movieResponse.status === 200) {
+      return "movie";
+    } else if (movieResponse.status === 404) {
+      console.warn(`Movie not found for ID: ${movieId}`);
+    } else {
+      console.error(`Unexpected status for movie: ${movieResponse.status}`);
+    }
+
+    const tvResponse = await fetch(
+      `${baseTMDB}/tv/${movieId}?api_key=${apiKey}&language=en-US`
+    );
+    if (tvResponse.status === 200) {
+      return "tv";
+    } else if (tvResponse.status === 404) {
+      console.warn(`TV show not found for ID: ${movieId}`);
+    } else {
+      console.error(`Unexpected status for TV: ${tvResponse.status}`);
+    }
+  } catch (error) {
+    console.error(`Error determining media type for ID ${movieId}:`, error);
+  }
+  return null;
 };
 
 const getMyLike = async () => {
@@ -31,23 +61,40 @@ const getMyLike = async () => {
         userId
       );
 
-      // ใช้ movieId เพื่อดึงรายละเอียดเพิ่มเติมจาก TMDB
       likedMovies.value = await Promise.all(
         result.data.map(async (movie) => {
           const movieId = movie.movieId;
+          const mediaType = await getMediaType(movieId);
+
+          if (!mediaType) {
+            console.warn(`Media type not found for ID ${movieId}`);
+            return {
+              ...movie,
+              title: "Unknown Title",
+              description: "No description available",
+              poster: "https://via.placeholder.com/300x450?text=No+Poster",
+              mediaType: null,
+            };
+          }
+
           try {
             const tmdbResponse = await fetch(
-              `${baseTMDB}/movie/${movieId}?api_key=${apiKey}&language=en-US`
+              `${baseTMDB}/${mediaType}/${movieId}?api_key=${apiKey}&language=en-US`
             );
+            if (!tmdbResponse.ok) {
+              throw new Error(`Failed to fetch ${mediaType} details`);
+            }
             const tmdbData = await tmdbResponse.json();
 
             return {
               ...movie,
-              title: tmdbData.title,
+              title: tmdbData.title || tmdbData.name,
               description: tmdbData.overview,
               poster: tmdbData.poster_path
                 ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
                 : "https://via.placeholder.com/300x450?text=No+Poster",
+              mediaType,
+              movieId: movieId,
             };
           } catch (error) {
             console.error(
@@ -59,6 +106,7 @@ const getMyLike = async () => {
               title: "Unknown Title",
               description: "No description available",
               poster: "https://via.placeholder.com/300x450?text=No+Poster",
+              mediaType,
             };
           }
         })
@@ -90,8 +138,23 @@ const goToRegister = () => {
   router.push({ name: "Register" });
 };
 
-const goToMovieDetail = (movieId) => {
-  router.push({ name: "MovieDetail", params: { id: movieId } });
+const goToMediaDetail = async (mediaId) => {
+  if (!mediaId) {
+    console.error(
+      `Missing mediaId parameter for goToMediaDetail: mediaId=${mediaId}`
+    );
+    return;
+  }
+
+  const mediaType = await getMediaType(mediaId);
+
+  if (!mediaType) {
+    console.error(`Unable to determine mediaType for ID: ${mediaId}`);
+    return;
+  }
+
+  const routeName = mediaType === "movie" ? "MovieDetail" : "TvDetail";
+  router.push({ name: routeName, params: { id: mediaId } });
 };
 
 onMounted(async () => {
@@ -102,6 +165,7 @@ onMounted(async () => {
   fetchCategories();
 });
 </script>
+
 
 <template>
   <div
@@ -149,7 +213,7 @@ onMounted(async () => {
               <!-- ปุ่มสำหรับดูรายละเอียด -->
               <!-- ปุ่มสำหรับไปหน้า MovieDetail -->
               <button
-                @click="goToMovieDetail(movie.movieId)"
+                @click="goToMediaDetail(movie.movieId)"
                 class="w-full mt-2 py-2 text-sm font-bold text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none"
               >
                 View Details

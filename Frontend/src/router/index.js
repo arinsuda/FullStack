@@ -14,6 +14,7 @@ import ReviewsView from "@/views/ReviewsView.vue"
 import UpComingView from "@/views/UpComingView.vue"
 import SupportView from "@/views/SupportView.vue"
 import AddReviewsVue from "../components/AddReviews.vue"
+import TvDetail from "../views/TvDetail.vue"
 
 const routes = [
   { path: "/", name: "RootPath", redirect: { name: "Login" } },
@@ -28,6 +29,7 @@ const routes = [
   { path: "/category/:id", name: "Category", component: CategoryView },
   { path: "/search", name: "SearchResults", component: SearchResults },
   { path: "/movie/:id", name: "MovieDetail", component: MovieDetail, props: true },
+  { path: "/tv/:id", name: "TvDetail", component: TvDetail, props: true },
   { path: "/users/likes", name: "Like", component: LikeView },
   { path: "/users/watchlists", name: "Watchlist", component: WatchlistsView },
   { path: "/users/reviews", name: "Reviewed", component: ReviewsView },
@@ -58,6 +60,7 @@ router.beforeEach((to, from, next) => {
     "Like",
     "Watchlist",
     "Reviewed",
+    "TvDetail"
   ];
 
   if (token) {

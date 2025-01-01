@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router'; // เพิ่ม useRouter
 import Navbar from '@/components/Navbar.vue';
 import Sidebar from '@/components/Sidebar.vue';
 
@@ -12,6 +12,7 @@ const categoryUrl = import.meta.env.VITE_CATEGORY_URL;
 const movies = ref([]);
 const categories = ref([]);
 const route = useRoute();
+const router = useRouter(); // ใช้ router
 const categoryId = ref(route.params.id);
 const loading = ref(false);
 const errorMessage = ref('');
@@ -50,6 +51,11 @@ const fetchMovies = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// เพิ่มฟังก์ชัน navigateToTvDetail
+const navigateToTvDetail = (tvId) => {
+  router.push({ name: 'TvDetail', params: { id: tvId } });
 };
 
 watch(
@@ -95,6 +101,7 @@ onMounted(() => {
               v-for="movie in movies"
               :key="movie.id"
               class="p-4 transition-transform transform rounded-lg cursor-pointer bg-zinc-800 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50"
+              @click="navigateToTvDetail(movie.id)" 
             >
               <img
                 :src="
@@ -102,14 +109,14 @@ onMounted(() => {
                     ? baseImageUrl + movie.poster_path
                     : '/placeholder-image.jpg'
                 "
-                :alt="movie.title || 'No Title'"
+                :alt="movie.name || 'No Title'"
                 class="mb-2 transition-opacity duration-300 rounded-lg hover:opacity-90"
               />
               <h3 class="text-lg font-semibold text-center truncate">
-                {{ movie.title || 'Untitled' }}
+                {{ movie.name || 'Untitled' }}
               </h3>
               <p class="mt-2 text-sm text-center text-gray-400">
-                {{ movie.release_date || 'Unknown release date' }}
+                {{ movie.first_air_date || 'Unknown release date' }}
               </p>
             </li>
           </ul>
@@ -127,65 +134,9 @@ onMounted(() => {
 
         <!-- No Movies Found -->
         <div v-else class="text-center">
-          <p class="text-gray-400">No movies found.</p>
+          <p class="text-gray-400">No TV series found.</p>
         </div>
       </main>
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Fade-in animation */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.8s ease-in-out;
-}
-
-/* Shake animation for error message */
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  50% {
-    transform: translateX(5px);
-  }
-  75% {
-    transform: translateX(-5px);
-  }
-}
-
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
-
-/* Responsive design and additional glow effect */
-li {
-  transition: box-shadow 0.3s, transform 0.3s;
-}
-
-li:hover {
-  box-shadow: 0 0 10px 4px rgba(255, 0, 0, 0.6);
-}
-
-img {
-  transition: transform 0.3s, opacity 0.3s;
-}
-
-img:hover {
-  transform: scale(1.05);
-}
-</style>
