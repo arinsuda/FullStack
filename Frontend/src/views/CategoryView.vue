@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute,useRouter } from "vue-router"
 import Navbar from "@/components/Navbar.vue"
 import Sidebar from "@/components/Sidebar.vue"
 
@@ -9,12 +9,17 @@ const baseUrl = import.meta.env.VITE_BASE_KEY
 const apiKey = import.meta.env.VITE_API_KEY
 
 const route = useRoute()
+const router = useRouter() 
 const categoryId = ref(parseInt(route.params.id))
 
 const categoryName = ref("")
 const tmdbGenreId = ref(null)
 const movies = ref([])
 const categories = ref([])
+
+const goToMovieDetail = (movieId) => {
+  router.push({ name: 'MovieDetail', params: { id: movieId } })  // นำทางไปยัง MovieDetail.vue โดยใช้ movieId
+}
 
 // ฟังก์ชันดึงข้อมูลจาก backend
 const fetchCategoryFromBackend = async () => {
@@ -115,6 +120,7 @@ onMounted(() => {
               v-for="movie in movies"
               :key="movie.id"
               class="p-4 rounded-lg bg-zinc-800"
+              @click="goToMovieDetail(movie.id)"
             >
               <img
                 :src="'https://image.tmdb.org/t/p/w500' + movie.poster_path"
