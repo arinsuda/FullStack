@@ -17,7 +17,6 @@ async function Login(url, obj, setErrorMessage) {
 
   if (response.status === 201) {
     const data = await response.json()
-    console.log(data)
     const token = data.data.token.token
     const payload = jwtDecode(token)
     authStore.setTokens({ token, payload })

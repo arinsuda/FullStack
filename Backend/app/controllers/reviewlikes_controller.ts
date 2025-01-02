@@ -57,19 +57,16 @@ export default class ReviewlikesController {
     const reviewId = params.reviewId
 
     try {
-      // ตรวจสอบว่ารีวิวมีอยู่หรือไม่
       const review = await Review.find(reviewId)
       if (!review) {
         return response.status(404).json({ message: 'Review not found' })
       }
 
-      // ตรวจสอบสถานะการ "like"
       const reviewLike = await ReviewLike.query()
         .where('reviewId', reviewId)
         .where('userId', user.id)
         .first()
 
-      // ถ้ามีการ "like"
       if (reviewLike) {
         return response.status(200).json({
           message: 'Review like status retrieved successfully',

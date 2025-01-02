@@ -275,13 +275,13 @@ onMounted(async () => {
           <div class="flex justify-center space-x-4">
             <button
               @click="goToLogin"
-              class="px-6 py-3 font-bold text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-400"
+              class="px-6 py-3 font-bold text-white duration-500 bg-red-500 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-400"
             >
               Login
             </button>
             <button
               @click="goToRegister"
-              class="px-6 py-3 font-bold text-white bg-gray-700 rounded hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-400"
+              class="px-6 py-3 font-bold text-white duration-500 bg-gray-700 rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-400"
             >
               Register
             </button>

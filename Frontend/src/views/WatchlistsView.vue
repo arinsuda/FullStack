@@ -233,6 +233,31 @@
             Your watchlist is empty.
           </p>
         </section>
+        <div
+          v-else
+          class="flex flex-col items-center justify-center min-h-screen space-y-6"
+        >
+          <h2 class="text-3xl font-bold">
+            Welcome to MOVIE<span class="text-red-500">HUB</span>
+          </h2>
+          <p class="text-gray-400">
+            Please login or register to view your watchlist.
+          </p>
+          <div class="flex justify-center space-x-4">
+            <button
+              @click="goToLogin"
+              class="px-6 py-3 font-bold text-white duration-500 bg-red-500 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-400"
+            >
+              Login
+            </button>
+            <button
+              @click="goToRegister"
+              class="px-6 py-3 font-bold text-white duration-500 bg-gray-700 rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-400"
+            >
+              Register
+            </button>
+          </div>
+        </div>
 
         <!-- Modal -->
         <div

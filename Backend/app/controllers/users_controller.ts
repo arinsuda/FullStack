@@ -61,7 +61,6 @@ export default class UsersController {
       const user = await User.verifyCredentials(username, password)
 
       if (user) {
-        console.log(user)
         const token = await auth.use('jwt').generate(user)
         return response.status(201).json({
           message: 'Login successful',
@@ -100,16 +99,31 @@ export default class UsersController {
   async edit({ auth, params, request, response }: HttpContext) {
     try {
       const userId = params.id
-
       const currentUser = auth.user
       if (!currentUser || currentUser.id !== Number(userId)) {
         return response.status(403).json({
           message: 'You are not authorized to update this user.',
         })
       }
-
+  
       const user = await User.findOrFail(userId)
       const payload = await request.validateUsing(UserInformation)
+  
+      const profilePicture = request.file('profile_picture', {
+        size: '2mb', 
+        extnames: ['jpg', 'jpeg', 'png'], 
+      })
+  
+      if (profilePicture) {
+        await profilePicture.move(Drive.publicPath('uploads'), {
+          name: `${Date.now()}_${profilePicture.clientName}`,
+          overwrite: true, 
+        })
+    
+        if (profilePicture.fileName) {
+          user.profile_picture = `uploads/${profilePicture.fileName}`;
+        }
+      }
   
       user.merge(payload)
       await user.save()

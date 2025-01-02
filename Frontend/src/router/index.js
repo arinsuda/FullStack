@@ -15,6 +15,7 @@ import UpComingView from "@/views/UpComingView.vue"
 import SupportView from "@/views/SupportView.vue"
 import AddReviewsVue from "../components/AddReviews.vue"
 import TvDetail from "../views/TvDetail.vue"
+import EditUser from "@/components/EditUser.vue"
 
 const routes = [
   { path: "/", name: "RootPath", redirect: { name: "Login" } },
@@ -33,7 +34,8 @@ const routes = [
   { path: "/users/likes", name: "Like", component: LikeView },
   { path: "/users/watchlists", name: "Watchlist", component: WatchlistsView },
   { path: "/users/reviews", name: "Reviewed", component: ReviewsView },
-  { path: "/movie/:id/add", name: "AddReviews", component: AddReviewsVue, props: true }
+  { path: "/movie/:id/add", name: "AddReviews", component: AddReviewsVue, props: true },
+  { path: "/user/:id/edit", name: "EditUser", component: EditUser}
 ]
 
 const router = createRouter({

@@ -29,7 +29,7 @@ export default class WatchlistsController {
           totalWatchlists: totalWatchlists[0].$extras.totalWatchlists,
         })
       }
-      // ถ้ายังไม่มี, เพิ่มเข้าไปใน watchlist
+
       const watchlist = new WatchLists()
       watchlist.userId = user.id
       watchlist.movieId = movieId

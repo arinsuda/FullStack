@@ -90,7 +90,6 @@ public async indexMovie({ params, response }: HttpContext) {
         .where('movieId', movieId)
         .where('id', reviewId)
         .withCount('likes')
-        console.log(review)
 
       return response.status(200).send({
         message: 'Review fetched successfully',

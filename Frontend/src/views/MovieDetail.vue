@@ -4,30 +4,28 @@
   import Navbar from "../components/Navbar.vue"
   import Sidebar from "../components/Sidebar.vue"
   import AddReviews from "../components/AddReviews.vue"
+  import { useMovieApi } from "../composables/useMovieApi"
+  import { useReviewApi } from "../composables/useReviewApi"
 
   //router
   const route = useRoute()
   const router = useRouter()
 
+  const { movie, cast, fetchMovieDetail, fetchMovieCast, updateMovieViews } =
+    useMovieApi()
+  const { reviews, totalReviews, averageRating, fetchReviews } = useReviewApi()
+
   //env
   const categoryUrl = import.meta.env.VITE_CATEGORY_URL
-  const apiKey = import.meta.env.VITE_API_KEY
-  const baseTMDB = import.meta.env.VITE_BASE_KEY
   const baseUrl = import.meta.env.VITE_BASE_URL
   const movieUrl = import.meta.env.VITE_MOVIES_URL
 
   const categories = ref([])
-  const movie = ref({})
-  const cast = ref([])
-  const reviews = ref([])
 
   //state
   const totalLikes = ref(0)
   const totalSaves = ref(0)
   const totalViews = ref(0)
-  const totalReviews = ref(0)
-  const averageRating = ref(0)
-  const totalLikesReviews = ref(0)
 
   //button
   const showCast = ref(false)
@@ -35,35 +33,6 @@
   const isLikedReview = ref(false)
   const isSaved = ref(false)
   const isLikedMovie = ref(false)
-
-  const fetchMovieDetail = async id => {
-    try {
-      const response = await fetch(
-        `${baseTMDB}/movie/${id}?api_key=${apiKey}&language=en-US`
-      )
-      if (!response.ok) throw new Error("Failed to fetch movie details")
-      const data = await response.json()
-      movie.value = data
-
-      await updateMovieViews(id)
-    } catch (error) {
-      console.error("Error fetching movie details:", error)
-    }
-  }
-
-  const updateMovieViews = async id => {
-    try {
-      const response = await fetch(`${movieUrl}/${id}/views`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      if (!response.ok) throw new Error("Failed to update movie views")
-    } catch (error) {
-      console.error("Error updating movie views:", error)
-    }
-  }
 
   const updateMovieStats = async id => {
     try {
@@ -94,55 +63,6 @@
       isSaved.value = data.data.isSaved || false
     } catch (error) {
       console.error("Error updating movie stats:", error)
-    }
-  }
-
-  const fetchMovieCast = async id => {
-    try {
-      const response = await fetch(
-        `${baseTMDB}/movie/${id}/credits?api_key=${apiKey}`
-      )
-      if (!response.ok) throw new Error("Failed to fetch movie cast")
-      const data = await response.json()
-      cast.value = data.cast
-    } catch (error) {
-      console.error("Error fetching movie cast:", error)
-    }
-  }
-
-  const fetchReviews = async id => {
-    try {
-      const response = await fetch(`${movieUrl}/${id}/reviews`)
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      if (data.data) {
-        const reviewsData = data.data
-
-        for (let review of reviewsData) {
-          const userResponse = await fetch(`${baseUrl}/users/${review.userId}`)
-
-          if (userResponse.ok) {
-            const userData = await userResponse.json()
-            review.author = userData.data.username
-          } else {
-            review.author = "Unknown User"
-          }
-
-          review.createdAt = new Date(review.createdAt).toLocaleDateString()
-          review.likesCount = review.likesCount || 0
-        }
-
-        reviews.value = reviewsData
-        updateReviewStats()
-      } else {
-        reviews.value = []
-      }
-    } catch (error) {
-      console.error("Error fetching reviews:", error)
     }
   }
 
@@ -225,43 +145,47 @@
     }
   }
 
-  const handleReviewLike = async (reviewId) => {
-  const token = JSON.parse(localStorage.getItem("token"))
-  const movieId = route.params.id
+  const handleReviewLike = async reviewId => {
+    const token = JSON.parse(localStorage.getItem("token"))
+    const movieId = route.params.id
 
-  try {
-    const response = await fetch(
-      `${movieUrl}/${movieId}/reviews/${reviewId}/like`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    )
-
-    const data = await response.json()
-
-    if (response.status === 200 || response.status === 201) {
-      const index = reviews.value.findIndex((r) => r.id === reviewId)
-      if (index !== -1) {
-        if (data.message === "Review liked successfully") {
-          reviews.value[index].isLiked = true
-          reviews.value[index].likesCount = (reviews.value[index].likesCount || 0) + 1
-        } else if (data.message === "Review unlike successfully") {
-          reviews.value[index].isLiked = false
-          reviews.value[index].likesCount = Math.max(0, (reviews.value[index].likesCount || 0) - 1)
+    try {
+      const response = await fetch(
+        `${movieUrl}/${movieId}/reviews/${reviewId}/like`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
+      )
+
+      const data = await response.json()
+
+      if (response.status === 200 || response.status === 201) {
+        const index = reviews.value.findIndex(r => r.id === reviewId)
+        if (index !== -1) {
+          if (data.message === "Review liked successfully") {
+            reviews.value[index].isLiked = true
+            reviews.value[index].likesCount =
+              (reviews.value[index].likesCount || 0) + 1
+          } else if (data.message === "Review unlike successfully") {
+            reviews.value[index].isLiked = false
+            reviews.value[index].likesCount = Math.max(
+              0,
+              (reviews.value[index].likesCount || 0) - 1
+            )
+          }
+        }
+        fetchReviewData()
+      } else {
+        console.error("Error:", data.message)
       }
-      fetchReviewData()
-    } else {
-      console.error("Error:", data.message)
+    } catch (error) {
+      console.error("Error:", error)
     }
-  } catch (error) {
-    console.error("Error:", error)
   }
-}
 
   const fetchReviewData = async reviewId => {
     const token = JSON.parse(localStorage.getItem("token"))
