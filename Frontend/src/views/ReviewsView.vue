@@ -142,21 +142,21 @@ onMounted(async () => {
             <div
               v-for="review in userReviews"
               :key="review.id"
-              class="flex flex-col bg-zinc-800 rounded-xl shadow-lg overflow-hidden"
+              class="flex flex-col overflow-hidden shadow-lg bg-zinc-800 rounded-xl"
             >
               <img
                 :src="review.poster || 'https://via.placeholder.com/300x450?text=No+Poster'"
                 alt="Movie Poster"
-                class="w-full h-64 object-cover"
+                class="object-cover w-full h-64"
               />
-              <div class="p-4 flex flex-col justify-between flex-grow">
+              <div class="flex flex-col justify-between flex-grow p-4">
                 <h3 class="mb-2 text-lg font-bold truncate">
                   {{ review.movieTitle }}
                 </h3>
-                <p class="text-gray-400 text-sm truncate">
-                  Rating: <span class="font-bold text-yellow-400">{{ review.rating }}/5</span>
+                <p class="text-sm text-gray-400 truncate">
+                  Rating: <span class="font-bold text-yellow-400">{{ review.rating }}/10</span>
                 </p>
-                <p class="mt-2 text-gray-400 text-sm truncate-3-lines">
+                <p class="mt-2 text-sm text-gray-400 truncate-3-lines">
                   {{ review.comment || "No review provided." }}
                 </p>
                 <p class="mt-4 text-xs text-gray-500">

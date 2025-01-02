@@ -1,8 +1,8 @@
 import { DateTime } from 'luxon'
-import { BaseModel, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
+import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
 import Review from './ReviewsMovie.js'
 import User from './user.js'
-import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 
 export default class ReviewLike extends BaseModel {
@@ -15,6 +15,9 @@ export default class ReviewLike extends BaseModel {
   @column()
   declare userId: number
 
+  @column()
+  declare isLiked: boolean
+
   @belongsTo(() => Review, { foreignKey: 'reviewId' })
   declare review: BelongsTo<typeof Review>
 
@@ -23,10 +26,4 @@ export default class ReviewLike extends BaseModel {
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
-
-  @hasMany(() => Review)
-  declare reviews: HasMany<typeof Review>
-
-  @hasMany(() => User)
-  declare users: HasMany<typeof User>
 }

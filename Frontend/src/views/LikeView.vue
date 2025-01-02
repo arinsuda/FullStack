@@ -181,87 +181,87 @@ onMounted(async () => {
 
       <!-- Main Content -->
       <main class="flex-1 p-6 ml-64">
-        <div v-if="user" class="space-y-6">
-          <h2 class="text-3xl font-bold text-center">Liked Movies</h2>
+        <div v-if="user">
+          <!-- Movie Detail -->
           <div
-            v-if="likedMovies.length"
-            class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4"
+            v-if="movieDetail"
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75"
           >
-            <div
-              v-for="movie in likedMovies"
-              :key="movie.id"
-              class="p-4 bg-zinc-800 rounded-xl shadow hover:shadow-lg transform transition duration-300 hover:-translate-y-1"
-            >
-              <img
-                :src="
-                  movie.poster ||
-                  'https://via.placeholder.com/300x450?text=No+Poster'
-                "
-                alt="Movie Poster"
-                class="w-full h-64 object-cover rounded-md mb-4"
-              />
-              <h3 class="mb-2 text-lg font-bold truncate text-center">
-                {{ movie.title }}
-              </h3>
-              <p class="text-gray-400 text-sm truncate-3-lines">
-                {{ movie.description || "No description available" }}
-              </p>
-              <p class="mt-2 text-sm text-gray-500">
-                <span class="font-bold text-gray-300">Liked at:</span>
-                {{ new Date(movie.likedAt).toLocaleString() }}
-              </p>
-              <!-- ปุ่มสำหรับดูรายละเอียด -->
-              <!-- ปุ่มสำหรับไปหน้า MovieDetail -->
+            <div class="w-3/4 max-w-4xl p-6 rounded shadow-lg bg-zinc-800">
+              <div class="flex">
+                <!-- Movie Poster -->
+                <img
+                  :src="movieDetail.poster || 'https://via.placeholder.com/300x450?text=No+Poster'"
+                  alt="Movie Poster"
+                  class="w-1/3 h-auto mr-6 rounded-md"
+                />
+                <!-- Movie Details -->
+                <div class="flex-1">
+                  <h2 class="mb-4 text-2xl font-bold">{{ movieDetail.title }}</h2>
+                  <p class="mb-4 text-gray-400">{{ movieDetail.overview }}</p>
+                  <p class="text-sm text-gray-500">
+                    <span class="font-bold text-gray-300">Release Date:</span>
+                    {{ movieDetail.release_date }}
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    <span class="font-bold text-gray-300">Rating:</span>
+                    {{ movieDetail.vote_average }}/10
+                  </p>
+                </div>
+              </div>
+              <!-- Close Button -->
               <button
-                @click="goToMediaDetail(movie.movieId)"
-                class="w-full mt-2 py-2 text-sm font-bold text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none"
+                @click="movieDetail = null"
+                class="px-4 py-2 mt-6 text-sm font-bold text-white bg-gray-700 rounded hover:bg-gray-600 focus:outline-none"
               >
-                View Details
+                Close
               </button>
             </div>
           </div>
-          <div v-else class="text-center text-gray-400">
-            You have not liked any movies yet.
-          </div>
-        </div>
 
-        <!-- Movie Detail -->
-        <div
-          v-if="movieDetail"
-          class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center"
-        >
-          <div class="bg-zinc-800 p-6 rounded shadow-lg w-3/4 max-w-4xl">
-            <div class="flex">
-              <!-- Movie Poster -->
-              <img
-                :src="movieDetail.poster"
-                alt="Movie Poster"
-                class="w-1/3 h-auto rounded-md mr-6"
-              />
-              <!-- Movie Details -->
-              <div class="flex-1">
-                <h2 class="text-2xl font-bold mb-4">{{ movieDetail.title }}</h2>
-                <p class="text-gray-400 mb-4">{{ movieDetail.overview }}</p>
-                <p class="text-sm text-gray-500">
-                  <span class="font-bold text-gray-300">Release Date:</span>
-                  {{ movieDetail.release_date }}
+          <!-- Liked Movies -->
+          <div v-else class="space-y-6">
+            <h2 class="text-3xl font-bold text-center">Liked Movies</h2>
+            <div
+              v-if="likedMovies.length"
+              class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4"
+            >
+              <div
+                v-for="movie in likedMovies"
+                :key="movie.id"
+                class="p-4 transition duration-300 transform shadow bg-zinc-800 rounded-xl hover:shadow-lg hover:-translate-y-1"
+              >
+                <img
+                  :src="movie.poster || 'https://via.placeholder.com/300x450?text=No+Poster'"
+                  alt="Movie Poster"
+                  class="object-cover w-full h-64 mb-4 rounded-md"
+                />
+                <h3 class="mb-2 text-lg font-bold text-center truncate">
+                  {{ movie.title }}
+                </h3>
+                <p class="text-sm text-gray-400 truncate-3-lines">
+                  {{ movie.description || "No description available" }}
                 </p>
-                <p class="text-sm text-gray-500">
-                  <span class="font-bold text-gray-300">Rating:</span>
-                  {{ movieDetail.vote_average }}/10
+                <p class="mt-2 text-sm text-gray-500">
+                  <span class="font-bold text-gray-300">Liked at:</span>
+                  {{ new Date(movie.likedAt).toLocaleString() }}
                 </p>
+                <!-- View Details Button -->
+                <button
+                  @click="goToMediaDetail(movie.movieId)"
+                  class="w-full py-2 mt-2 text-sm font-bold text-white duration-500 bg-red-600 rounded-xl hover:bg-red-900 focus:outline-none hover:shadow-[0_0_10px_5px_rgba(255,0,0,0.7)] transition"
+                >
+                  View Details
+                </button>
               </div>
             </div>
-            <!-- Close Button -->
-            <button
-              @click="movieDetail = null"
-              class="mt-6 py-2 px-4 text-sm font-bold text-white bg-gray-700 rounded hover:bg-gray-600 focus:outline-none"
-            >
-              Close
-            </button>
+            <div v-else class="text-center text-gray-400">
+              You have not liked any movies yet.
+            </div>
           </div>
         </div>
 
+        <!-- User not logged in -->
         <div
           v-else
           class="flex flex-col items-center justify-center min-h-screen space-y-6"

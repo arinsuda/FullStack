@@ -8,6 +8,7 @@ export default class extends BaseSchema {
       table.increments('id')
       table.integer('review_id').unsigned().references('id').inTable('reviews').onDelete('CASCADE')
       table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE')
+      table.boolean('is_liked').notNullable().defaultTo(false)
       table.timestamp('created_at')
 
       table.unique(['review_id', 'user_id'])

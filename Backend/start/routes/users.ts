@@ -12,6 +12,7 @@ router
     router.post('/api/movies/:movieId/likes', [LikesMovieController, 'store'])
     router.delete('/api/movies/:movieId/likes', [LikesMovieController, 'destroy'])
     router.post('/api/movies/:movieId/watchlists', [WatchlistsController, 'store'])
+    router.patch('/api/movies/:movieId/watchlists', [WatchlistsController, 'update'])
     router.delete('/api/movies/:movieId/watchlists', [WatchlistsController, 'destroy'])
   })
   .use(middleware.auth())

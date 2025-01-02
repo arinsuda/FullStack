@@ -74,20 +74,25 @@ export default class WatchlistsController {
   }
 
   public async update({ auth, params, request, response }: HttpContext) {
-    const user = auth.getUserOrFail()
-    const watchlistId = params.id
-    const payload = request.only(['status'])
-
     try {
-      const watchlist = await WatchLists.findOrFail(watchlistId)
+      // รับข้อมูลของผู้ใช้ที่เข้าสู่ระบบ
+      const user = await auth.authenticate()
+      const movieId = params.movieId
+      const payload = request.only(['status'])
 
-      if (watchlist.userId !== user.id) {
-        return response
-          .status(403)
-          .send({ message: 'You can only update your own watchlist items' })
+      // ตรวจสอบสถานะที่ส่งมา
+      if (!['TO_WATCH', 'WATCHED'].includes(payload.status)) {
+        return response.status(400).send({ message: 'Invalid status value' })
       }
 
-      watchlist.status = payload.status || watchlist.status
+      // ค้นหา watchlist ของผู้ใช้และ movieId ที่กำหนด
+      const watchlist = await WatchLists.query()
+        .where('user_id', user.id)
+        .andWhere('movie_id', movieId)
+        .firstOrFail()
+
+      // อัปเดตสถานะ
+      watchlist.status = payload.status
       await watchlist.save()
 
       return response.status(200).send({
@@ -95,7 +100,7 @@ export default class WatchlistsController {
         data: watchlist,
       })
     } catch (error) {
-      return response.status(400).send({ message: 'Failed to update watchlist', error })
+      return response.status(400).send({ message: 'Failed to update watchlist', error: error.message })
     }
   }
 

@@ -10,7 +10,7 @@ export default class ReviewlikesController {
     const movieId = params.movieId
     const reviewId = params.reviewId
     try {
-      const movie = await Movie.find(movieId)
+      const movie = await Movie.query().where('movieId', movieId)
       if (!movie) {
         return response.status(404).json({ message: 'Movie not found' })
       }
@@ -36,6 +36,7 @@ export default class ReviewlikesController {
       const reviewLike = new ReviewLike()
       reviewLike.reviewId = reviewId
       reviewLike.userId = user.id
+      reviewLike.isLiked = true
       await reviewLike.save()
 
       return response.status(201).json({
@@ -45,6 +46,50 @@ export default class ReviewlikesController {
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to like review',
+        error: error.message,
+      })
+    }
+  }
+
+  // เพิ่มฟังก์ชัน show ที่ใช้ดึงข้อมูลสถานะการ "like"
+  public async show({ auth, params, response }: HttpContext) {
+    const user = await auth.getUserOrFail()
+    const reviewId = params.reviewId
+
+    try {
+      // ตรวจสอบว่ารีวิวมีอยู่หรือไม่
+      const review = await Review.find(reviewId)
+      if (!review) {
+        return response.status(404).json({ message: 'Review not found' })
+      }
+
+      // ตรวจสอบสถานะการ "like"
+      const reviewLike = await ReviewLike.query()
+        .where('reviewId', reviewId)
+        .where('userId', user.id)
+        .first()
+
+      // ถ้ามีการ "like"
+      if (reviewLike) {
+        return response.status(200).json({
+          message: 'Review like status retrieved successfully',
+          data: {
+            reviewId: reviewId,
+            isLiked: reviewLike.isLiked,
+          },
+        })
+      }
+
+      return response.status(200).json({
+        message: 'Review not liked by this user',
+        data: {
+          reviewId: reviewId,
+          isLiked: false,
+        },
+      })
+    } catch (error) {
+      return response.status(400).json({
+        message: 'Failed to retrieve like status',
         error: error.message,
       })
     }

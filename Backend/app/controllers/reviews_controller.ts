@@ -46,17 +46,21 @@ export default class ReviewsController {
     }
   }
 
-  public async indexMovie({ params, response }: HttpContext) {
+public async indexMovie({ params, response }: HttpContext) {
     const movieId = params.movieId
     try {
       const reviews = await Review.query()
         .where('movieId', movieId)
         .preload('user')
-        .preload('likes')
+        .withCount('likes') 
 
       return response.status(200).send({
         message: 'Reviews fetched successfully',
-        data: reviews,
+        data: reviews.map(review => ({
+          ...review.$attributes,
+          likesCount: review.$extras.likes_count || 0,
+          user: review.user,
+        })),
       })
     } catch (error) {
       return response.status(400).send({ message: 'Failed to fetch reviews', error })
@@ -67,9 +71,7 @@ export default class ReviewsController {
     try {
       const userId = params.userId
       const reviews = await Review.query().where('userId', userId).preload('likes')
-      console.log(reviews);
       
-
       return response.status(200).send({
         message: 'Reviews fetched successfully',
         data: reviews,
@@ -87,11 +89,15 @@ export default class ReviewsController {
       const review = await Review.query()
         .where('movieId', movieId)
         .where('id', reviewId)
-        .preload('likes')
+        .withCount('likes')
+        console.log(review)
 
       return response.status(200).send({
         message: 'Review fetched successfully',
-        data: { review },
+        data: review.map(review => ({
+          ...review.$attributes,
+          likesCount: review.$extras.likes_count || 0
+        })),
       })
     } catch (error) {
       return response.status(400).send({ message: 'Failed to fetch review', error })

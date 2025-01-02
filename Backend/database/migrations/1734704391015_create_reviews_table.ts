@@ -10,7 +10,6 @@ export default class extends BaseSchema {
       table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE')
       table.float('rating')
       table.string('comment')
-      table.integer('likes').defaultTo(0)
 
       table.timestamp('created_at')
       table.timestamp('updated_at')

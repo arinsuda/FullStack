@@ -4,6 +4,7 @@ import router from '@adonisjs/core/services/router'
 
 router
   .group(() => {
+    router.get('/movies/:movieId/reviews/:reviewId/like', [ReviewlikesController, 'show'])
     router.post('/movies/:movieId/reviews/:reviewId/like', [ReviewlikesController, 'store'])
     router.delete('/movies/:movieId/reviews/:reviewId/like', [ReviewlikesController, 'destroy'])
   })
