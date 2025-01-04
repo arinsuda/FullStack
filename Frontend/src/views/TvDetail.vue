@@ -390,7 +390,7 @@ onMounted(async () => {
               class="w-1/4 rounded-lg shadow-lg hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition-all duration-300"
             />
 
-            <div class="flex flex-col w-3/3 px-4">
+            <div class="flex flex-col px-4 w-3/3">
               <div class="flex items-center justify-between mb-2">
                 <h1
                   class="mb-2 text-3xl font-bold tracking-wide text-red-500 transition duration-300 hover:text-red-600"
@@ -408,8 +408,8 @@ onMounted(async () => {
                     <img
                       :src="
                         isLikedMovie
-                          ? '/src/assets/heart-like.svg'
-                          : '/src/assets/heart-unlike.svg'
+                          ? '/assets/heart-like.svg'
+                          : '/assets/heart-unlike.svg'
                       "
                       alt="Like"
                       class="w-6 h-6"
@@ -423,8 +423,8 @@ onMounted(async () => {
                     <img
                       :src="
                         isSaved
-                          ? '/src/assets/bookmark-fill.svg'
-                          : '/src/assets/bookmark.svg'
+                          ? '/assets/bookmark-fill.svg'
+                          : '/assets/bookmark.svg'
                       "
                       alt="Save"
                       class="w-8 h-8"

@@ -102,7 +102,7 @@
               class="w-full px-4 py-2 pl-10 mt-1 text-white bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 duration-500 hover:shadow-[0_0_15px_rgba(255,0,0,0.6)]"
             />
             <img
-              src="@/assets/username-icon.svg"
+              src="/assets/username-icon.svg"
               alt="user"
               class="absolute w-5 h-5 text-gray-400 left-3 top-1/2"
             />
@@ -122,7 +122,7 @@
                 class="w-full px-10 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 duration-500 hover:shadow-[0_0_15px_rgba(255,0,0,0.6)]"
               />
               <img
-                src="@/assets/padlock.svg"
+                src="/assets/padlock.svg"
                 alt="padlock"
                 class="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2 h-2/5"
               />
@@ -133,13 +133,13 @@
               >
                 <img
                   v-if="showPassword"
-                  src="@/assets/eye-open.svg"
+                  src="/assets/eye-open.svg"
                   alt="eyeopen"
                   class="w-5 h-5 text-gray-400"
                 />
                 <img
                   v-else
-                  src="@/assets/eye-slash.svg"
+                  src="/assets/eye-slash.svg"
                   alt="eyeclose"
                   class="w-5 h-5 text-gray-400"
                 />
