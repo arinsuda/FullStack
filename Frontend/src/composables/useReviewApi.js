@@ -1,4 +1,5 @@
 import { ref } from "vue"
+import { jwtDecode } from "jwt-decode"
 
 export function useReviewApi() {
   const movieUrl = import.meta.env.VITE_MOVIES_URL
@@ -6,8 +7,21 @@ export function useReviewApi() {
   const reviews = ref([])
   const totalReviews = ref(0)
   const averageRating = ref(0)
+  const userId = ref(null)
 
-  const fetchReviews = async id => {
+  // ดึง userId จาก token
+  const token = localStorage.getItem("token")
+  if (token) {
+    try {
+      const decodedToken = jwtDecode(token)
+      userId.value = decodedToken.userId
+    } catch (error) {
+      console.error("Error decoding token:", error)
+    }
+  }
+
+  // ฟังก์ชัน fetch reviews
+  const fetchReviews = async (id) => {
     try {
       const response = await fetch(`${movieUrl}/${id}/reviews`)
 
@@ -60,6 +74,7 @@ export function useReviewApi() {
     reviews,
     totalReviews,
     averageRating,
+    userId,
     fetchReviews,
   }
 }

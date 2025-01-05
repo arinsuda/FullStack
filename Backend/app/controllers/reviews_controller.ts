@@ -126,29 +126,41 @@ public async indexMovie({ params, response }: HttpContext) {
     const user = await auth.authenticate()
     const movieId = params.movieId
     const reviewId = params.reviewId
-
+  
     try {
       const payload = await request.validateUsing(createReviewValidator)
-
-      const movie = await Movie.find(movieId)
+  
+      const movie = await Movie.query().where('movieId', movieId).first()
       if (!movie) {
         return response.status(404).send({ message: 'Movie not found' })
       }
-
+  
       const review = await Review.find(reviewId)
       if (!review) {
         return response.status(404).send({ message: 'Review not found' })
       }
-
+  
       if (review.userId !== user.id) {
         return response.status(403).send({ message: 'You can only update your own review' })
       }
-
+  
+      // อัพเดตรีวิว
       review.rating = payload.rating || review.rating
       review.comment = payload.comment || review.comment
-
       await review.save()
-
+  
+      // คำนวณคะแนนเฉลี่ยใหม่ของ movie
+      const reviews = await Review.query().where('movieId', movieId)
+      let totalRating = 0
+      reviews.forEach((r) => {
+        totalRating += r.rating
+      })
+      const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0
+  
+      // อัพเดตคะแนนใน movie
+      movie.rating = averageRating
+      await movie.save()
+  
       return response.status(200).send({
         message: 'Review updated successfully',
         data: review,
@@ -157,11 +169,18 @@ public async indexMovie({ params, response }: HttpContext) {
       return response.status(400).send({ message: 'Failed to update review', error })
     }
   }
+  
 
   public async destroy({ auth, params, response }: HttpContext) {
     try {
       const user = await auth.authenticate()
-      const reviewId = params.id
+      const movieId = params.movieId
+      const reviewId = params.reviewId
+
+      const movie = await Movie.query().where('movieId', movieId).first()
+      if (!movie) {
+        return response.status(404).send({ message: 'Movie not found' })
+      }
 
       const review = await Review.find(reviewId)
 
@@ -174,6 +193,18 @@ public async indexMovie({ params, response }: HttpContext) {
       }
 
       await review.delete()
+
+            // คำนวณคะแนนเฉลี่ยใหม่ของ movie
+            const reviews = await Review.query().where('movieId', movieId)
+            let totalRating = 0
+            reviews.forEach((r) => {
+              totalRating += r.rating
+            })
+            const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0
+        
+            // อัพเดตคะแนนใน movie
+            movie.rating = averageRating
+            await movie.save()
 
       return response.status(200).send({
         message: 'Review deleted successfully',
