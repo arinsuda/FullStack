@@ -81,7 +81,7 @@ const userRegister = async () => {
 <template>
   <div
     class="h-screen bg-center bg-cover"
-    :style="{ backgroundImage: 'url(/src/assets/bg.png)' }"
+    :style="{ backgroundImage: 'url(/assets/bg.png)' }"
   >
     <div class="flex items-center justify-center h-full">
       <div class="w-full max-w-md p-10 shadow-lg bg-black/75 rounded-xl">

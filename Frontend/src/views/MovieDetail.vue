@@ -8,8 +8,11 @@ import { useMovieApi } from "../composables/useMovieApi"
 import { useReviewApi } from "../composables/useReviewApi"
 import EditReview from "@/components/EditReview.vue";
 import ConfirmDelete from "@/components/ConfirmDelete.vue";
+import heartlike from "/assets/heart-like.svg"
+import heartunlike from "/assets/heart-unlike.svg"
+import bookmarkfill from "/assets/bookmark-fill.svg"
+import bookmark from "/assets/bookmark.svg"
 
-//router
 const route = useRoute()
 const router = useRouter()
 
@@ -453,16 +456,16 @@ onMounted(async () => {
                   <button @click="handleMovieLike"
                     class="p-3 transition duration-300 bg-transparent rounded-full focus:outline-none hover:scale-110">
                     <img :src="isLikedMovie
-                      ? '/src/assets/heart-like.svg'
-                      : '/src/assets/heart-unlike.svg'
+                      ? heartlike
+                      : heartunlike
                       " alt="Like" class="w-6 h-6" />
                   </button>
                   <!-- Watchlist Button -->
                   <button @click="handleAddToWatchlist"
                     class="p-3 transition duration-300 bg-transparent rounded-full focus:outline-none hover:scale-110">
                     <img :src="isSaved
-                      ? '/src/assets/bookmark-fill.svg'
-                      : '/src/assets/bookmark.svg'
+                      ? bookmarkfill
+                      : bookmark
                       " alt="Save" class="w-8 h-8" />
                   </button>
                 </div>
@@ -613,10 +616,8 @@ onMounted(async () => {
     </div>
     <AddReviews :id="route.params.id" :isOpen="showReviewModal" @close="closeReviewModal"
       @submit="handleReviewSubmit" />
-    <EditReview :isOpen="showEditReview" :review="reviewToEdit" @save="updatedReviews"
-      @close="closeEditReviews" />
-    <ConfirmDelete :isOpen="showDeleteReviews" @confirm="deletedReview(reviewToDelete)"
-      @close="closeDeleteReview" />
+    <EditReview :isOpen="showEditReview" :review="reviewToEdit" @save="updatedReviews" @close="closeEditReviews" />
+    <ConfirmDelete :isOpen="showDeleteReviews" @confirm="deletedReview(reviewToDelete)" @close="closeDeleteReview" />
   </div>
 </template>
 

@@ -4,6 +4,13 @@ import { useRoute, useRouter } from "vue-router";
 import Navbar from "../components/Navbar.vue";
 import Sidebar from "../components/Sidebar.vue";
 import AddReviews from "../components/AddReviews.vue";
+import heartlike from "/assets/heart-like.svg"
+import heartunlike from "/assets/heart-unlike.svg"
+import bookmarkfill from "/assets/bookmark-fill.svg"
+import bookmark from "/assets/bookmark.svg"
+import { jwtDecode } from "jwt-decode"
+import EditReview from "@/components/EditReview.vue";
+import ConfirmDelete from "@/components/ConfirmDelete.vue";
 
 //router
 const route = useRoute();
@@ -34,6 +41,18 @@ const showReviewModal = ref(false);
 const isLikedReview = ref(false);
 const isSaved = ref(false);
 const isLikedMovie = ref(false);
+
+const userId = ref(null)
+
+const token = localStorage.getItem("token")
+if (token) {
+  try {
+    const decodedToken = jwtDecode(token)
+    userId.value = decodedToken.userId
+  } catch (error) {
+    console.error("Error decoding token:", error)
+  }
+}
 
 const fetchMovieDetail = async (id) => {
   try {
@@ -217,32 +236,74 @@ const handleReviewSubmit = async ({ comment, rating }) => {
   }
 };
 
-const handleReviewLike = async (reviewId) => {
-  const token = JSON.parse(localStorage.getItem("token"));
+const handleReviewLike = async reviewId => {
+  const token = JSON.parse(localStorage.getItem("token"))
+  const movieId = route.params.id
+
   try {
-    const response = await fetch(`${movieUrl}/reviews/${reviewId}/like`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (response.status === 201) {
-      isLikedReview.value = !isLikedReview.value;
-      const updatedReview = await response.json();
-      const index = reviews.value.findIndex((r) => r.id === reviewId);
-      if (index !== -1) {
-        reviews.value[index].likes = updatedReview.likes;
+    const response = await fetch(
+      `${movieUrl}/${movieId}/reviews/${reviewId}/like`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }
-    } else if (response.status === 401) {
-      router.push({ name: "Login" });
+    )
+
+    const data = await response.json()
+
+    if (response.status === 200 || response.status === 201) {
+      const index = reviews.value.findIndex(r => r.id === reviewId)
+      if (index !== -1) {
+        if (data.message === "Review liked successfully") {
+          reviews.value[index].isLiked = true
+          reviews.value[index].likesCount =
+            (reviews.value[index].likesCount || 0) + 1
+        } else if (data.message === "Review unlike successfully") {
+          reviews.value[index].isLiked = false
+          reviews.value[index].likesCount = Math.max(
+            0,
+            (reviews.value[index].likesCount || 0) - 1
+          )
+        }
+      }
+      fetchReviewData()
     } else {
-      throw new Error("Failed to like the review");
+      console.error("Error:", data.message)
     }
   } catch (error) {
-    console.error("Error liking the review:", error);
+    console.error("Error:", error)
   }
-};
+}
+
+
+const fetchReviewData = async reviewId => {
+  const token = JSON.parse(localStorage.getItem("token"))
+  const movieId = route.params.id
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/movies/${movieId}/reviews/${reviewId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (response.status === 200) {
+      const result = await response.json()
+      isLikedReview.value = result.data.isLiked
+    } else {
+      throw new Error("Failed to fetch review data")
+    }
+  } catch (error) {
+    console.error("Error fetching review data:", error)
+  }
+}
 
 const handleAddToWatchlist = async () => {
   const movieId = route.params.id;
@@ -311,7 +372,6 @@ const checkUserIsStatus = async () => {
   const movieId = route.params.id
 
   if (!token) {
-    // console.log('No token found');
     return;
   }
 
@@ -331,32 +391,118 @@ const checkUserIsStatus = async () => {
       // Check isLiked
       const likedMovies = data.data.my_likes;
       const movieIdLiked = likedMovies.length > 0 ? likedMovies[0].movieId : null;
-      // console.log(movieIdLiked);
-      
+
       const isLiked = likedMovies.some(
         (movie) => movie.movieId === movieIdLiked && movie.isLiked === 1
       );
       isLikedMovie.value = isLiked;
-      // console.log('Like is:' + isLikedMovie.value);
 
-      // Check isWatchlisted
       const watchlistedMovies = data.data.my_watchlists;
       const movieIdWatchlisted = watchlistedMovies.length > 0 ? watchlistedMovies[0].movieId : null;
       const isWatchlisted = watchlistedMovies.some(
         (movie) => movie.movieId === movieIdWatchlisted && movie.isWatchlist === 1
       );
       isSaved.value = isWatchlisted;
-      // console.log('Watchlist is' + isSaved.value);
     }
   } catch (error) {
     console.error("Error fetching liked movies:", error);
   }
 };
 
-// watch([totalLikes, totalSaves, totalReviews], async () => {
-//   const movieId = route.params.id
-//   await updateMovieStats(movieId)
-// })
+// State for dropdown and modal
+const showDropdown = ref({})
+const showEditReview = ref(false)
+const reviewToEdit = ref(null)
+
+const openEditReviws = (review) => {
+  reviewToEdit.value = { ...review };
+  showEditReview.value = true
+}
+
+const closeEditReviews = () => {
+  showEditReview.value = false
+}
+
+// Function to handle editing a review
+const updatedReviews = async (updatedData) => {
+  const token = JSON.parse(localStorage.getItem("token"))
+  const movieId = route.params.id
+
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/movies/${movieId}/reviews/${updatedData.id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          comment: updatedData.comment,
+          rating: updatedData.rating,
+        }),
+      }
+    )
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to edit review");
+    }
+
+    // แสดงข้อความว่ารีวิวอัพเดตสำเร็จ
+    console.log("Review updated successfully:", data);
+
+    // เรียก fetchReviews เพื่อดึงข้อมูลใหม่จาก API
+    await fetchReviews(movieId);
+
+    // ปิด modal หรือ dropdown หลังจากอัพเดต
+    closeEditReviews();
+    showDropdown.value[updatedData.id] = false;
+  } catch (error) {
+    console.error("Error editing review:", error)
+  }
+}
+
+// Function to handle deleting a review
+const deletedReview = async (reviewId) => {
+  const token = JSON.parse(localStorage.getItem("token"));
+  const movieId = route.params.id;
+
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/movies/${movieId}/reviews/${reviewId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) throw new Error("Failed to delete review");
+    await fetchReviews(movieId);
+    updateReviewStats()
+    closeDeleteReview()
+  } catch (error) {
+    console.error("Error deleting review:", error);
+  }
+};
+
+const toggleDropdown = (reviewId) => {
+  showDropdown.value[reviewId] = !showDropdown.value[reviewId]
+}
+
+const reviewToDelete = ref(null);
+const showDeleteReviews = ref(false);
+
+const openDeleteReview = (review) => {
+  reviewToDelete.value = review.id;
+  showDeleteReviews.value = true
+}
+
+const closeDeleteReview = () => {
+  showDeleteReviews.value = false
+}
 
 onMounted(async () => {
   const movieId = route.params.id;
@@ -366,14 +512,12 @@ onMounted(async () => {
   await fetchCategories();
   await updateMovieStats(movieId);
   await checkUserIsStatus();
+  await fetchReviewData()
 });
 </script>
 
 <template>
-  <div
-    class="flex flex-col min-h-screen text-white bg-zinc-900"
-    style="margin-top: 2rem"
-  >
+  <div class="flex flex-col min-h-screen text-white bg-zinc-900" style="margin-top: 2rem">
     <Navbar />
 
     <div class="flex flex-1 pt-16">
@@ -384,51 +528,33 @@ onMounted(async () => {
         <div class="flex flex-col gap-8 tv-detail">
           <!-- Movie Poster and Details -->
           <div class="flex w-full gap-5 p-6">
-            <img
-              :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`"
-              alt="Tv Poster"
-              class="w-1/4 rounded-lg shadow-lg hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition-all duration-300"
-            />
+            <img :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`" alt="Tv Poster"
+              class="w-1/4 rounded-lg shadow-lg hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition-all duration-300" />
 
             <div class="flex flex-col px-4 w-3/3">
               <div class="flex items-center justify-between mb-2">
                 <h1
-                  class="mb-2 text-3xl font-bold tracking-wide text-red-500 transition duration-300 hover:text-red-600"
-                >
+                  class="mb-2 text-3xl font-bold tracking-wide text-red-500 transition duration-300 hover:text-red-600">
                   {{ movie.name }}
                 </h1>
 
                 <!-- Like and Watchlist Buttons -->
                 <div class="flex gap-4">
                   <!-- Like Button -->
-                  <button
-                    @click="handleMovieLike"
-                    class="p-3 transition duration-300 bg-transparent rounded-full focus:outline-none hover:scale-110"
-                  >
-                    <img
-                      :src="
-                        isLikedMovie
-                          ? '/assets/heart-like.svg'
-                          : '/assets/heart-unlike.svg'
-                      "
-                      alt="Like"
-                      class="w-6 h-6"
-                    />
+                  <button @click="handleMovieLike"
+                    class="p-3 transition duration-300 bg-transparent rounded-full focus:outline-none hover:scale-110">
+                    <img :src="isLikedMovie
+                      ? heartlike
+                      : heartunlike
+                      " alt="Like" class="w-6 h-6" />
                   </button>
                   <!-- Watchlist Button -->
-                  <button
-                    @click="handleAddToWatchlist"
-                    class="p-3 transition duration-300 bg-transparent rounded-full focus:outline-none hover:scale-110"
-                  >
-                    <img
-                      :src="
-                        isSaved
-                          ? '/assets/bookmark-fill.svg'
-                          : '/assets/bookmark.svg'
-                      "
-                      alt="Save"
-                      class="w-8 h-8"
-                    />
+                  <button @click="handleAddToWatchlist"
+                    class="p-3 transition duration-300 bg-transparent rounded-full focus:outline-none hover:scale-110">
+                    <img :src="isSaved
+                      ? bookmarkfill
+                      : bookmark
+                      " alt="Save" class="w-8 h-8" />
                   </button>
                 </div>
               </div>
@@ -439,62 +565,44 @@ onMounted(async () => {
                 <span class="text-xl font-semibold">{{ averageRating }} </span>
               </div>
 
-              <p
-                class="mb-4 text-sm text-gray-400 transition duration-300 hover:text-gray-200"
-              >
+              <p class="mb-4 text-sm text-gray-400 transition duration-300 hover:text-gray-200">
                 {{ movie.overview }}
               </p>
               <div class="flex flex-wrap gap-2">
                 <template v-for="genre in movie.genres" :key="genre.id">
-                  <router-link
-                    v-if="mapGenreToCategory(genre.name)"
-                    :to="{
-                      name: 'Category',
-                      params: { id: mapGenreToCategory(genre.name) },
-                    }"
-                    class="px-2 py-1 text-xs font-medium text-white bg-slate-700 rounded-full shadow hover:shadow-[0_0_10px_ rgba(255,255,255,0.6)] transition duration-300"
-                  >
+                  <router-link v-if="mapGenreToCategory(genre.name)" :to="{
+                    name: 'Category',
+                    params: { id: mapGenreToCategory(genre.name) },
+                  }"
+                    class="px-2 py-1 text-xs font-medium text-white bg-slate-700 rounded-full shadow hover:shadow-[0_0_10px_ rgba(255,255,255,0.6)] transition duration-300">
                     {{ genre.name }}
                   </router-link>
-                  <span
-                    v-else
-                    class="px-2 py-1 text-xs font-medium text-red-500 rounded-full shadow bg-slate-700"
-                  >
+                  <span v-else class="px-2 py-1 text-xs font-medium text-red-500 rounded-full shadow bg-slate-700">
                     {{ genre.name }}
                   </span>
                 </template>
               </div>
               <!-- Zone Stats -->
-              <div
-                class="grid grid-cols-2 gap-4 mt-6 text-center md:grid-cols-4"
-              >
-                <div
-                  class="p-4 transition duration-300 bg-green-600 rounded-lg shadow-lg hover:shadow-xl"
-                >
+              <div class="grid grid-cols-2 gap-4 mt-6 text-center md:grid-cols-4">
+                <div class="p-4 transition duration-300 bg-green-600 rounded-lg shadow-lg hover:shadow-xl">
                   <div class="text-2xl font-extrabold">{{ totalViews }}</div>
                   <div class="mt-1 text-sm font-medium text-gray-200">
                     Members
                   </div>
                 </div>
-                <div
-                  class="p-4 transition duration-300 bg-pink-500 rounded-lg shadow-lg hover:shadow-xl"
-                >
+                <div class="p-4 transition duration-300 bg-pink-500 rounded-lg shadow-lg hover:shadow-xl">
                   <div class="text-2xl font-extrabold">{{ totalLikes }}</div>
                   <div class="mt-1 text-sm font-medium text-gray-200">
                     Likes
                   </div>
                 </div>
-                <div
-                  class="p-4 transition duration-300 bg-blue-500 rounded-lg shadow-lg hover:shadow-xl"
-                >
+                <div class="p-4 transition duration-300 bg-blue-500 rounded-lg shadow-lg hover:shadow-xl">
                   <div class="text-2xl font-extrabold">{{ totalSaves }}</div>
                   <div class="mt-1 text-sm font-medium text-gray-200">
                     Lists
                   </div>
                 </div>
-                <div
-                  class="p-4 transition duration-300 bg-gray-600 rounded-lg shadow-lg hover:shadow-xl"
-                >
+                <div class="p-4 transition duration-300 bg-gray-600 rounded-lg shadow-lg hover:shadow-xl">
                   <div class="text-2xl font-extrabold">{{ totalReviews }}</div>
                   <div class="mt-1 text-sm font-medium text-gray-200">
                     Reviews
@@ -506,32 +614,19 @@ onMounted(async () => {
 
           <!-- Cast Section -->
           <div class="p-6 rounded-lg shadow-xl bg-neutral-900">
-            <div
-              class="flex items-center justify-between p-2 mb-4 rounded-lg bg-zinc-950 h-14"
-            >
+            <div class="flex items-center justify-between p-2 mb-4 rounded-lg bg-zinc-950 h-14">
               <h2 class="px-6 text-2xl font-bold text-white">TOP CAST</h2>
-              <button
-                v-if="cast.length > 6"
-                @click="toggleCast"
-                class="flex items-center h-full px-6 ml-4 text-lg font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition duration-300"
-              >
+              <button v-if="cast.length > 6" @click="toggleCast"
+                class="flex items-center h-full px-6 ml-4 text-lg font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition duration-300">
                 {{ showCast ? "Hide Cast" : "Show All Cast" }}
               </button>
             </div>
             <div class="grid grid-cols-6 gap-4">
-              <div
-                v-for="(actor, index) in showCast ? cast : cast.slice(0, 6)"
-                :key="actor.id"
-                class="text-center group"
-              >
-                <img
-                  :src="`https://image.tmdb.org/t/p/w200${actor.profile_path}`"
-                  alt="Actor"
-                  class="object-cover h-20 mx-auto mb-2 transition transform rounded-full shadow-md w-20 group-hover:scale-105 group-hover:shadow-[0_0_15px_rgba(255,255,255,0.6)]"
-                />
-                <p
-                  class="text-sm text-center text-gray-200 transition duration-300 group-hover:text-white"
-                >
+              <div v-for="(actor, index) in showCast ? cast : cast.slice(0, 6)" :key="actor.id"
+                class="text-center group">
+                <img :src="`https://image.tmdb.org/t/p/w200${actor.profile_path}`" alt="Actor"
+                  class="object-cover h-20 mx-auto mb-2 transition transform rounded-full shadow-md w-20 group-hover:scale-105 group-hover:shadow-[0_0_15px_rgba(255,255,255,0.6)]" />
+                <p class="text-sm text-center text-gray-200 transition duration-300 group-hover:text-white">
                   {{ actor.name }}
                 </p>
               </div>
@@ -540,16 +635,12 @@ onMounted(async () => {
 
           <!-- Reviews Section -->
           <div class="p-6 rounded-lg shadow-lg bg-neutral-900">
-            <div
-              class="flex items-center justify-between pb-2 mb-6 border-b border-gray-700"
-            >
+            <div class="flex items-center justify-between pb-2 mb-6 border-b border-gray-700">
               <h2 class="text-2xl font-semibold tracking-wide text-white">
                 Reviews
               </h2>
-              <button
-                @click="openReviewModal"
-                class="px-4 py-2 text-sm font-bold text-white transition duration-300 rounded-lg hover:scale-110 bg-gradient-to-r focus:ring-2 focus:ring-red-500 from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
-              >
+              <button @click="openReviewModal"
+                class="px-4 py-2 text-sm font-bold text-white transition duration-300 rounded-lg hover:scale-110 bg-gradient-to-r focus:ring-2 focus:ring-red-500 from-red-600 to-red-700 hover:from-red-700 hover:to-red-800">
                 + Write a Review
               </button>
             </div>
@@ -561,54 +652,52 @@ onMounted(async () => {
             </div>
 
             <div v-else class="space-y-6">
-              <div
-                v-for="review in reviews"
-                :key="review.id"
-                class="p-6 border border-gray-700 rounded-lg shadow-md bg-zinc-800 hover:scale-105 focus:ring-2 focus:ring-red-500 hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition duration-300"
-              >
+              <div v-for="review in reviews" :key="review.id"
+                class="p-6 border border-gray-700 rounded-lg shadow-md bg-zinc-800 hover:scale-105 focus:ring-2 focus:ring-red-500 hover:shadow-[0_0_20px_5px_rgba(255,0,0,0.7)] transition duration-300">
                 <!-- Header: Author and Date -->
                 <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-2xl font-bold text-gray-100">
-                    {{ review.user.username }}
-                  </h3>
-                  <span class="text-sm text-gray-400">{{
-                    review.createdAt
-                  }}</span>
+                  <div class="flex items-center gap-2">
+
+                    <div v-if="review.user.id === userId" class="relative">
+                      <button @click="toggleDropdown(review.id)"
+                        class="p-2 px-4 text-gray-400 transition duration-500 rounded-full hover:text-white hover:bg-gray-600">
+                        ⋮
+                      </button>
+
+                      <div v-show="showDropdown[review.id]" class="absolute w-40 rounded-lg shadow-md bg-zinc-900">
+                        <button @click="openEditReviws(review)"
+                          class="block w-full px-4 py-2 text-sm text-left text-white hover:bg-zinc-500 rounded-xl">
+                          Edit
+                        </button>
+                        <button @click="openDeleteReview(review)"
+                          class="block w-full px-4 py-2 text-sm text-left text-red-600 duration-500 hover:bg-red-500 hover:text-white rounded-xl">
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-100">
+                      {{ review.user.username }}
+                    </h3>
+                  </div>
+                  <span class="text-sm text-gray-400">{{ review.createdAt }}</span>
                 </div>
 
                 <!-- Review Comment -->
                 <p class="mb-4 text-gray-300">{{ review.comment }}</p>
 
                 <!-- Like Button and Rating -->
-                <div class="flex items-center justify-between">
-                  <!-- Like Button -->
-                  <button
-                    @click="handleReviewLike(review.id)"
-                    class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition bg-red-500 rounded-lg shadow-md hover:scale-105 hover:bg-red-600 focus:ring-2 focus:ring-red-400"
-                  >
-                    <i
-                      :class="isLikedReview ? 'fas fa-heart' : 'far fa-heart'"
-                      class="text-lg"
-                    ></i>
-                    <span>{{ isLikedReview ? "Liked" : "Like" }}</span>
+                <div class="flex items-center justify-between mt-4">
+                  <button @click="handleReviewLike(review.id)"
+                    class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition bg-red-500 rounded-lg shadow-md hover:scale-105 hover:bg-red-600 focus:ring-2 focus:ring-red-400">
+                    <i :class="review.isLiked ? 'fas fa-heart' : 'far fa-heart'" class="text-lg"></i>
+                    <span class="ml-2">{{ review.likesCount }}</span>
                   </button>
-
-                  <!-- Rating Stars -->
                   <div class="flex items-center gap-2">
-                    <span class="font-semibold text-yellow-400"
-                      >Rating: {{ review.rating }} / 5</span
-                    >
+                    <span class="font-semibold text-yellow-400">Rating: {{ review.rating }} / 10</span>
                     <div class="flex gap-1">
-                      <i
-                        v-for="n in 5"
-                        :key="n"
-                        class="fas"
-                        :class="
-                          n <= review.rating
-                            ? 'fa-star text-yellow-500'
-                            : 'fa-star text-gray-500'
-                        "
-                      ></i>
+                      <i v-for="n in 10" :key="n" class="fas" :class="n <= review.rating
+                        ? 'fa-star text-yellow-500'
+                        : 'fa-star text-gray-500'"></i>
                     </div>
                   </div>
                 </div>
@@ -618,12 +707,10 @@ onMounted(async () => {
         </div>
       </main>
     </div>
-    <AddReviews
-      :id="route.params.id"
-      :isOpen="showReviewModal"
-      @close="closeReviewModal"
-      @submit="handleReviewSubmit"
-    />
+    <AddReviews :id="route.params.id" :isOpen="showReviewModal" @close="closeReviewModal"
+      @submit="handleReviewSubmit" />
+    <EditReview :isOpen="showEditReview" :review="reviewToEdit" @save="updatedReviews" @close="closeEditReviews" />
+    <ConfirmDelete :isOpen="showDeleteReviews" @confirm="deletedReview(reviewToDelete)" @close="closeDeleteReview" />
   </div>
 </template>
 

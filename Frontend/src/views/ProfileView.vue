@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar.vue"
 import EditUser from "../components/EditUser.vue"
 
 const categoryUrl = import.meta.env.VITE_CATEGORY_URL
+const baseUrl = import.meta.env.VITE_BASE_URL
 const user = ref(null)
 const router = useRouter()
 const categories = ref([])
@@ -22,7 +23,7 @@ const fetchUserData = async () => {
   const userId = getUserIdFromToken(token)
 
   try {
-    const response = await fetch(`http://localhost:3333/users/${userId}`, {
+    const response = await fetch(`${baseUrl}/users/${userId}`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -60,7 +61,7 @@ const saveChanges = async (updatedUser) => {
   const userId = getUserIdFromToken(token)
 
   try {
-    const response = await fetch(`http://localhost:3333/users/${userId}`, {
+    const response = await fetch(`${baseUrl}/users/${userId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -157,7 +158,6 @@ onMounted(() => {
             <h3 class="mb-4 ml-4 text-xl font-semibold">Profile Information</h3>
             <div class="space-y-3">
               <p><strong>Email:</strong> {{ user.email }}</p>
-              <p><strong>Joined:</strong> {{ new Date(user.iat * 1000).toLocaleDateString() }}</p>
             </div>
           </div>
 

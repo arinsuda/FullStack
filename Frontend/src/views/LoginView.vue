@@ -2,6 +2,7 @@
   import { ref, onMounted } from "vue"
   import { useRouter } from "vue-router"
   import auth from "@/lib/auth.js"
+  import bg from "/assets/heart-like.svg"
 
   const router = useRouter()
 
@@ -54,7 +55,7 @@
 <template>
   <div
     class="h-screen bg-center bg-cover"
-    :style="{ backgroundImage: 'url(/src/assets/bg.png)' }"
+    :style="{ backgroundImage: 'url(/assets/bg.png)' }"
   >
     <div class="flex items-center justify-center h-full">
       <div class="w-full max-w-md p-10 shadow-lg bg-black/75 rounded-xl">
